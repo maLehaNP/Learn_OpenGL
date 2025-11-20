@@ -119,12 +119,15 @@ int main() {
 
 	// Configure global opengl state
 	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_STENCIL_TEST);
+	glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
 
 	// Build and compile shader
 	Shader lightingShader("shader.vert", "shader.frag");
-	//Shader simpleShader("simple_shader.vert", "simple_shader.frag");
 	Shader lightCubeShader("light_cube.vert", "light_cube.frag");
+	Shader singleColorShader("shaderSingleColor.vert", "shaderSingleColor.frag");
 
 
 	// load models
@@ -315,7 +318,7 @@ int main() {
 
 		drawingTime = deltaTime - sleptTime;
 		std::chrono::milliseconds s{ static_cast<int>((fpsTick - drawingTime) * 1000) };
-		std::this_thread::sleep_for(s);
+		//std::this_thread::sleep_for(s);
 		sleptTime = fpsTick - drawingTime;
 
 		if (currentTime - lastSec >= 1.0) {
@@ -331,7 +334,7 @@ int main() {
 
 
 		processInput(window);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 
 		lightingShader.use();
@@ -356,20 +359,28 @@ int main() {
 			lightingShader.setVec3("spotLight.direction", camera.Front);
 		}
 
-		//simpleShader.use();
-		//simpleShader.setVec3("viewPos", camera.Position);
-		//// View/projection transformations
-		//projection = glm::perspective(glm::radians(camera.Zoom), screen_width / screen_height, 0.1f, 100.0f);
-		//view = camera.GetViewMatrix();
-		//simpleShader.setMat4("projection", projection);
-		//simpleShader.setMat4("view", view);
-		//// World transformation
-		//model = glm::mat4(1.0f);
-		//simpleShader.setMat4("model", model);
-
-		//ourModel.Draw(simpleShader);
+		// 1st. render pass, draw objects as normal, writing to the stencil buffer
+		// --------------------------------------------------------------------
+		glStencilFunc(GL_ALWAYS, 1, 0xFF); // all fragments should pass the stencil test
+		glStencilMask(0xFF); // enable writing to the stencil buffer
 		lightingShader.use();
 		ourModel.Draw(lightingShader);
+
+		// 2nd. render pass: now draw slightly scaled versions of the objects, this time disabling stencil writing.
+		// Because the stencil buffer is now filled with several 1s. The parts of the buffer that are 1 are not drawn, thus only drawing 
+		// the objects' size differences, making it look like borders.
+		// -----------------------------------------------------------------------------------------------------------------------------
+		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+		glStencilMask(0x00); // disable writing to the stencil buffer
+		glDisable(GL_DEPTH_TEST);
+		singleColorShader.use();
+		model = glm::mat4(1.0f);
+		model = glm::scale(model, glm::vec3(1.5f));
+		singleColorShader.setMat4("model", model);
+		ourModel.Draw(singleColorShader);
+		glStencilMask(0xFF);
+		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		glEnable(GL_DEPTH_TEST);
 
 		lightCubeShader.use();
 		lightCubeShader.setMat4("projection", projection);

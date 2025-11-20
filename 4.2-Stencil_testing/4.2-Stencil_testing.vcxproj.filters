@@ -20,8 +20,8 @@
     <None Include="light_cube.vert" />
     <None Include="shader.frag" />
     <None Include="shader.vert" />
-    <None Include="simple_shader.frag" />
-    <None Include="simple_shader.vert" />
+    <None Include="shaderSingleColor.vert" />
+    <None Include="shaderSingleColor.frag" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="camera.h">
