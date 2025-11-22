@@ -442,6 +442,19 @@ int main() {
 			lightingShader.setVec3("spotLight.direction", camera.Front);
 		}
 
+		// Draw 4 light objs
+		lightCubeShader.use();
+		lightCubeShader.setMat4("projection", projection);
+		lightCubeShader.setMat4("view", view);
+		for (unsigned int i = 0; i < 4; i++)
+		{
+			model = glm::mat4(1.0f);
+			model = glm::translate(model, pointLightPositions[i]);
+			model = glm::scale(model, glm::vec3(0.2f));
+			lightCubeShader.setMat4("model", model);
+			cube.Draw(lightCubeShader);
+		}
+
 		lightingShader.use();
 
 		// Draw floor
@@ -477,26 +490,11 @@ int main() {
 			grass.Draw(lightingShader);
 		}
 
-		// Draw 4 light objs
-		for (unsigned int i = 0; i < 4; i++)
-		{
-			model = glm::mat4(1.0f);
-			model = glm::translate(model, pointLightPositions[i]);
-			model = glm::scale(model, glm::vec3(0.2f));
-			lightCubeShader.setMat4("model", model);
-			cube.Draw(lightCubeShader);
-		}
-
 		// Draw window
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(0.0f, 1.75f, 2.0f));
 		lightingShader.setMat4("model", model);
 		transpWindow.Draw(lightingShader);
-
-		lightCubeShader.use();
-		lightCubeShader.setMat4("projection", projection);
-		lightCubeShader.setMat4("view", view);
-
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
