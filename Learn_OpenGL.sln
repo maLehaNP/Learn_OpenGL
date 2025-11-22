@@ -39,6 +39,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "2.6-Multiple_lights", "2.6-
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "3.1-Mesh", "3.1-Mesh\3.1-Mesh.vcxproj", "{DE73BB0E-E89F-445C-A0BD-14DE18F99D73}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "4.3-Blending", "4.3-Blending\4.3-Blending.vcxproj", "{5B18A717-A719-41E6-AC8D-44B3F8A64468}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -191,6 +193,14 @@ Global
 		{DE73BB0E-E89F-445C-A0BD-14DE18F99D73}.Release|x64.Build.0 = Release|x64
 		{DE73BB0E-E89F-445C-A0BD-14DE18F99D73}.Release|x86.ActiveCfg = Release|Win32
 		{DE73BB0E-E89F-445C-A0BD-14DE18F99D73}.Release|x86.Build.0 = Release|Win32
+		{5B18A717-A719-41E6-AC8D-44B3F8A64468}.Debug|x64.ActiveCfg = Debug|x64
+		{5B18A717-A719-41E6-AC8D-44B3F8A64468}.Debug|x64.Build.0 = Debug|x64
+		{5B18A717-A719-41E6-AC8D-44B3F8A64468}.Debug|x86.ActiveCfg = Debug|Win32
+		{5B18A717-A719-41E6-AC8D-44B3F8A64468}.Debug|x86.Build.0 = Debug|Win32
+		{5B18A717-A719-41E6-AC8D-44B3F8A64468}.Release|x64.ActiveCfg = Release|x64
+		{5B18A717-A719-41E6-AC8D-44B3F8A64468}.Release|x64.Build.0 = Release|x64
+		{5B18A717-A719-41E6-AC8D-44B3F8A64468}.Release|x86.ActiveCfg = Release|Win32
+		{5B18A717-A719-41E6-AC8D-44B3F8A64468}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
