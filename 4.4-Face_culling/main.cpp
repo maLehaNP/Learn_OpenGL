@@ -208,7 +208,7 @@ int main() {
 	};
 	vector<Texture> textures;
 
-	Mesh cube(cube_vertices, indices, textures);
+	Model cube("cube/cube.obj");
 
 	float planeVertices[] = {
 		// positions         // Normals         // texture Coords (note we set these higher than 1 (together with GL_REPEAT as texture wrapping mode). this will cause the floor texture to repeat)
@@ -467,6 +467,8 @@ int main() {
 		glDisable(GL_CULL_FACE);  // Disable face culling before drawing non-closed shapes
 
 		// Draw floor
+		model = glm::mat4(1.0f);
+		lightingShader.setMat4("model", model);
 		floor.Draw(lightingShader);
 
 		// Draw grass
