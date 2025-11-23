@@ -142,38 +142,6 @@ int main() {
 	cout << "Total number of vertices: " << nVertSum << endl;
 	std::cout << endl;
 
-	float vertices[] = {
-		// positions
-		-0.5f, -0.5f, -0.5f,  // back left down
-		 0.5f, -0.5f, -0.5f,  // back right down
-		 0.5f,  0.5f, -0.5f,  // back right up
-		-0.5f,  0.5f, -0.5f,  // back left up
-
-		-0.5f, -0.5f,  0.5f,  // front left down
-		 0.5f, -0.5f,  0.5f,  // front right down
-		 0.5f,  0.5f,  0.5f,  // front right up
-		-0.5f,  0.5f,  0.5f,  // front left up
-
-		-0.5f,  0.5f,  0.5f,  // left up front
-		-0.5f,  0.5f, -0.5f,  // left up back
-		-0.5f, -0.5f, -0.5f,  // left down back
-		-0.5f, -0.5f,  0.5f,  // left down front
-
-		 0.5f,  0.5f,  0.5f,  // right u f
-		 0.5f,  0.5f, -0.5f,  // right u b
-		 0.5f, -0.5f, -0.5f,  // right d b
-		 0.5f, -0.5f,  0.5f,  // right d f
-
-		-0.5f, -0.5f, -0.5f,  // down l b
-		 0.5f, -0.5f, -0.5f,  // down r b
-		 0.5f, -0.5f,  0.5f,  // down r f
-		-0.5f, -0.5f,  0.5f,  // down l f
-
-		-0.5f,  0.5f, -0.5f,  // up l b
-		 0.5f,  0.5f, -0.5f,  // up r b
-		 0.5f,  0.5f,  0.5f,  // up r f
-		-0.5f,  0.5f,  0.5f  // up l f
-	};
 	glm::vec3 pointLightPositions[] = {
 		glm::vec3(0.7f,  0.2f,  2.0f),
 		glm::vec3(2.3f, -3.3f, -4.0f),
@@ -181,72 +149,9 @@ int main() {
 		glm::vec3(0.0f,  0.5f, -3.0f)
 	};
 
-	vector<Vertex> cube_vertices;
-	for (int i = 0; i < 3 * 4 * 6; i += 3) {
-		Vertex vertex;
-		vertex.Position = glm::vec3(vertices[i], vertices[i + 1], vertices[i + 2]);
-		cube_vertices.push_back(vertex);
-	}
-	vector<unsigned int> indices = {
-		0, 2, 1,
-		0, 3, 2,
-
-		4, 5, 6,
-		4, 6, 7,
-
-		8, 9, 10,
-		8, 10, 11,
-
-		12, 14, 13,
-		12, 15, 14,
-
-		16, 17, 18,
-		16, 18, 19,
-
-		20, 22, 21,
-		20, 23, 22
-	};
-	vector<Texture> textures;
-
 	Model cube("cube/cube.obj");
 
-	float planeVertices[] = {
-		// positions         // Normals         // texture Coords (note we set these higher than 1 (together with GL_REPEAT as texture wrapping mode). this will cause the floor texture to repeat)
-		 5.0f, 0.0f,  5.0f,  0.0f, 1.0f, 0.0f,  2.0f, 0.0f,
-		-5.0f, 0.0f,  5.0f,  0.0f, 1.0f, 0.0f,  0.0f, 0.0f,
-		-5.0f, 0.0f, -5.0f,  0.0f, 1.0f, 0.0f,  0.0f, 2.0f,
-		 5.0f, 0.0f, -5.0f,  0.0f, 1.0f, 0.0f,  2.0f, 2.0f
-	};
-
-	vector<Vertex> plane_vertices;
-	for (int i = 0; i < 8 * 4; i += 8) {
-		Vertex vertex;
-		vertex.Position = glm::vec3(planeVertices[i], planeVertices[i + 1], planeVertices[i + 2]);
-		vertex.Normal = glm::vec3(planeVertices[i + 3], planeVertices[i + 4], planeVertices[i + 5]);
-		vertex.TexCoords = glm::vec2(planeVertices[i + 6], planeVertices[i + 7]);
-		plane_vertices.push_back(vertex);
-	}
-
-	vector<unsigned int> quadIndices = {
-		0, 2, 1,
-		0, 3, 2
-	};
-
-	textures.clear();
-	Texture texture;
-	unsigned int textureId = TextureFromFile("bathroom_floor_tile_texture.jpg", ".");
-	cout << "Floor texture id: " << textureId << endl;
-	std::cout << endl;
-	texture.id = textureId;
-	texture.type = "texture_diffuse";
-	texture.path = "bathroom_floor_tile_texture.jpg";
-	textures.push_back(texture);
-	texture.id = TextureFromFile("bathroom_floor_tile_texture_specular.jpg", ".");
-	texture.type = "texture_specular";
-	texture.path = "bathroom_floor_tile_texture_specular.jpg";
-	textures.push_back(texture);
-
-	Mesh floor(plane_vertices, quadIndices, textures);
+	Model floor("floor/floor.obj");
 
 	vector<glm::vec3> vegetation;
 	vegetation.push_back(glm::vec3(-2.0f, 0.0f, -0.48f));
@@ -255,46 +160,9 @@ int main() {
 	vegetation.push_back(glm::vec3(-0.3f, 0.0f, -2.3f));
 	vegetation.push_back(glm::vec3(2.0f, 0.0f, -0.6f));
 
-	float quad[] = {
-		// positions          // normals         // texture Coords
-		 0.5f,  0.0f,  0.0f,  0.0f, 0.0f, 1.0f,  1.0f, 0.0f,
-		-0.5f,  0.0f,  0.0f,  0.0f, 0.0f, 1.0f,  0.0f, 0.0f,
-		-0.5f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f,  0.0f, 1.0f,
-		 0.5f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f,  1.0f, 1.0f
-	};
+	Model grass("grass/grass.obj");
 
-	vector<Vertex> quadVerticesVec;
-	for (int i = 0; i < 8 * 4; i += 8) {
-		Vertex vertex;
-		vertex.Position = glm::vec3(quad[i], quad[i + 1], quad[i + 2]);
-		vertex.Normal = glm::vec3(quad[i + 3], quad[i + 4], quad[i + 5]);
-		vertex.TexCoords = glm::vec2(quad[i + 6], quad[i + 7]);
-		quadVerticesVec.push_back(vertex);
-	}
-
-	textures.clear();
-	texture.id = TextureFromFile("grass.png", ".");
-	texture.type = "texture_diffuse";
-	texture.path = "grass.png";
-	textures.push_back(texture);
-	texture.id = TextureFromFile("grass_specular.png", ".");
-	texture.type = "texture_specular";
-	texture.path = "grass_specular.png";
-	textures.push_back(texture);
-
-	Mesh grass(quadVerticesVec, quadIndices, textures);
-
-	textures.clear();
-	texture.id = TextureFromFile("blending_transparent_window.png", ".");
-	texture.type = "texture_diffuse";
-	texture.path = "blending_transparent_window.png";
-	textures.push_back(texture);
-	texture.id = TextureFromFile("blending_transparent_window_specular.png", ".");
-	texture.type = "texture_specular";
-	texture.path = "blending_transparent_window_specular.png";
-	textures.push_back(texture);
-
-	Mesh transpWindow(quadVerticesVec, quadIndices, textures);
+	Model transpWindow("window/window.obj");
 
 	
 	// Shader configuration --------------------------------------------------------
