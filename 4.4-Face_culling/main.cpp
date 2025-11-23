@@ -6,15 +6,15 @@
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include "stb_image.h"
+#include <stb_image/stb_image.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "shader.h"
-#include "camera.h"
-#include "mesh.h"
-#include "model.h"
+#include "learnopengl/shader.h"
+#include "learnopengl/camera.h"
+#include "learnopengl/mesh.h"
+#include "learnopengl/model.h"
 
 using namespace std;
 
@@ -124,14 +124,14 @@ int main() {
 	glEnable(GL_CULL_FACE);
 
 	// Build and compile shader
-	Shader lightingShader("shader.vert", "shader.frag");
-	Shader lightCubeShader("light_cube.vert", "light_cube.frag");
-	Shader singleColorShader("shaderSingleColor.vert", "shaderSingleColor.frag");
+	Shader lightingShader("shaders/shader.vert", "shaders/shader.frag");
+	Shader lightCubeShader("shaders/light_cube.vert", "shaders/light_cube.frag");
+	Shader singleColorShader("shaders/shaderSingleColor.vert", "shaders/shaderSingleColor.frag");
 
 
 	// load models
 	// -----------
-	Model ourModel("backpack/backpack.obj");
+	Model ourModel("objects/backpack/backpack.obj");
 
 	cout << "Total number of meshes: " << ourModel.meshes.size() << endl;
 	cout << "Total number of textures loaded: " << ourModel.textures_loaded.size() << endl;
@@ -149,9 +149,9 @@ int main() {
 		glm::vec3(0.0f,  0.5f, -3.0f)
 	};
 
-	Model cube("cube/cube.obj");
+	Model cube("objects/cube/cube.obj");
 
-	Model floor("floor/floor.obj");
+	Model floor("objects/floor/floor.obj");
 
 	vector<glm::vec3> vegetation;
 	vegetation.push_back(glm::vec3(-2.0f, 0.0f, -0.48f));
@@ -160,9 +160,9 @@ int main() {
 	vegetation.push_back(glm::vec3(-0.3f, 0.0f, -2.3f));
 	vegetation.push_back(glm::vec3(2.0f, 0.0f, -0.6f));
 
-	Model grass("grass/grass.obj");
+	Model grass("objects/grass/grass.obj");
 
-	Model transpWindow("window/window.obj");
+	Model transpWindow("objects/window/window.obj");
 
 	
 	// Shader configuration --------------------------------------------------------
