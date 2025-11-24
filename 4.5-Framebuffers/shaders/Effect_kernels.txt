@@ -1,0 +1,69 @@
+    // Sharpen kernel
+    //float kernel[9] = float[](
+    //    -1, -1, -1,
+    //    -1,  9, -1,
+    //    -1, -1, -1
+    //);
+
+    // Blur kernel
+    //float kernel[9] = float[](
+    //    1.0 / 16, 2.0 / 16, 1.0 / 16,
+    //    2.0 / 16, 4.0 / 16, 2.0 / 16,
+    //    1.0 / 16, 2.0 / 16, 1.0 / 16  
+    //);
+
+    // Edge-detection kernel
+    //float kernel[9] = float[](
+    //    1,  1, 1,
+    //    1, -8, 1,
+    //    1,  1, 1
+    //);
+
+    // Top sobel
+    //float kernel[9] = float[](
+    //     1,  2,  1,
+    //     0,  0,  0,
+    //    -1, -2, -1
+    //);
+
+    // Left sobel
+    //float kernel[9] = float[](
+    //    1, 0, -1,
+    //    2, 0, -2,
+    //    1, 0, -1
+    //);
+
+    // Right sobel
+    //float kernel[9] = float[](
+    //    -1, 0, 1,
+    //    -2, 0, 2,
+    //    -1, 0, 1
+    //);
+
+    // Bottom sobel
+    //float kernel[9] = float[](
+    //    -1, -2, -1,
+    //     0,  0,  0,
+    //     1,  2,  1
+    //);
+
+    // Emboss
+    //float kernel[9] = float[](
+    //    -2, -1, 0,
+    //    -1,  1, 1,
+    //     0,  1, 2
+    //);
+
+    // Outline
+    //float kernel[9] = float[](
+    //    -1, -1, -1,
+    //    -1,  8, -1,
+    //    -1, -1, -1
+    //);
+
+    // Sharpen
+    float kernel[9] = float[](
+         0, -1,  0,
+        -1,  5, -1,
+         0, -1,  0
+    );
