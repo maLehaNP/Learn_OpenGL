@@ -255,11 +255,11 @@ int main() {
 
 	// Creating quad
 	float quadVertices[] = {
-		// pos             // texCoords
-		 1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
-		-1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-		-1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
-		 1.0f,  1.0f, 0.0f, 1.0f, 1.0f
+		// pos               // texCoords
+		 1.0f, -1.0f, 0.0f,  1.0f, 0.0f,
+		-1.0f, -1.0f, 0.0f,  0.0f, 0.0f,
+		-1.0f,  1.0f, 0.0f,  0.0f, 1.0f,
+		 1.0f,  1.0f, 0.0f,  1.0f, 1.0f
 	};
 	vector<Vertex> vertices;
 	for (int i = 0; i < 5 * 4; i += 5) {
