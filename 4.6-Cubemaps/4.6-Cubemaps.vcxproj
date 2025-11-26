@@ -134,8 +134,11 @@
   <ItemGroup>
     <None Include="shaders\light_cube.frag" />
     <None Include="shaders\light_cube.vert" />
-    <None Include="shaders\shader.frag" />
-    <None Include="shaders\shader.vert" />
+    <None Include="shaders\phongShader.frag" />
+    <None Include="shaders\phongShader.vert" />
+    <None Include="shaders\reflectionShader.frag" />
+    <None Include="shaders\reflectionShader.vert" />
+    <None Include="shaders\refractionShader.frag" />
     <None Include="shaders\skyboxShader.frag" />
     <None Include="shaders\skyboxShader.vert" />
   </ItemGroup>

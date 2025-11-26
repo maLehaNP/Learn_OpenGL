@@ -37,7 +37,7 @@ double deltaTime = 0.0;
 double lastTime = 0.0;
 
 // Camera
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+Camera camera(glm::vec3(0.0f, 1.0f, 3.0f));
 float lastX = screen_width / 2.0f;
 float lastY = screen_height / 2.0f;
 bool firstMouse = true;
@@ -79,42 +79,6 @@ int main() {
 	printf("Loaded OpenGL %d.%d\n", GLVersion.major, GLVersion.minor);
 	std::cout << endl;
 
-	// Querying OpenGL maximum supporter values
-	int glIntVal;
-	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &glIntVal);
-	std::cout << "Maximum texture size supported: " << glIntVal << std::endl;
-	/*glGetIntegerv(GL_MAX_VIEWPORT_DIMS, &glIntVal);
-	std::cout << "GL_MAX_VIEWPORT_DIMS: " << glIntVal << std::endl;*/  // Lead to "Run-Time Check Failure #2 - Stack around the variable 'glIntVal' was corrupted."
-	glGetIntegerv(GL_MAX_3D_TEXTURE_SIZE, &glIntVal);
-	std::cout << "GL_MAX_3D_TEXTURE_SIZE: " << glIntVal << std::endl;
-	glGetIntegerv(GL_MAX_ELEMENTS_VERTICES, &glIntVal);
-	std::cout << "GL_MAX_ELEMENTS_VERTICES: " << glIntVal << std::endl;
-	glGetIntegerv(GL_MAX_ELEMENTS_INDICES, &glIntVal);
-	std::cout << "GL_MAX_ELEMENTS_INDICES: " << glIntVal << std::endl;
-	glGetIntegerv(GL_MAX, &glIntVal);
-	std::cout << "GL_MAX: " << glIntVal << std::endl;
-	glGetIntegerv(GL_MAX_DRAW_BUFFERS, &glIntVal);
-	std::cout << "GL_MAX_DRAW_BUFFERS: " << glIntVal << std::endl;
-	glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &glIntVal);
-	std::cout << "Maximum nr of vertex attributes supported: " << glIntVal << std::endl;
-	glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_COMPONENTS, &glIntVal);
-	std::cout << "GL_MAX_FRAGMENT_UNIFORM_COMPONENTS: " << glIntVal << std::endl;
-	glGetIntegerv(GL_MAX_VERTEX_UNIFORM_COMPONENTS, &glIntVal);
-	std::cout << "GL_MAX_VERTEX_UNIFORM_COMPONENTS: " << glIntVal << std::endl;
-	glGetIntegerv(GL_MAX_RENDERBUFFER_SIZE, &glIntVal);
-	std::cout << "GL_MAX_RENDERBUFFER_SIZE: " << glIntVal << std::endl;
-	glGetIntegerv(GL_MAX_SAMPLES, &glIntVal);
-	std::cout << "GL_MAX_SAMPLES: " << glIntVal << std::endl;
-	glGetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE, &glIntVal);
-	std::cout << "GL_MAX_TEXTURE_BUFFER_SIZE: " << glIntVal << std::endl;
-	glGetIntegerv(GL_MAX_RECTANGLE_TEXTURE_SIZE, &glIntVal);
-	std::cout << "GL_MAX_RECTANGLE_TEXTURE_SIZE: " << glIntVal << std::endl;
-	glGetIntegerv(GL_MAX_FRAGMENT_INPUT_COMPONENTS, &glIntVal);
-	std::cout << "GL_MAX_FRAGMENT_INPUT_COMPONENTS: " << glIntVal << std::endl;
-	glGetIntegerv(GL_MAX_SERVER_WAIT_TIMEOUT, &glIntVal);
-	std::cout << "GL_MAX_SERVER_WAIT_TIMEOUT: " << glIntVal << std::endl;
-	std::cout << endl;
-
 	// tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
 	stbi_set_flip_vertically_on_load(true);
 
@@ -123,19 +87,21 @@ int main() {
 	glEnable(GL_CULL_FACE);
 
 	// Build and compile shader
-	Shader lightingShader("shaders/shader.vert", "shaders/shader.frag");
+	Shader lightingShader("shaders/phongShader.vert", "shaders/phongShader.frag");
 	Shader lightCubeShader("shaders/light_cube.vert", "shaders/light_cube.frag");
 	Shader skyboxShader("shaders/skyboxShader.vert", "shaders/skyboxShader.frag");
+	Shader reflectionShader("shaders/reflectionShader.vert", "shaders/reflectionShader.frag");
+	Shader refractionShader("shaders/reflectionShader.vert", "shaders/refractionShader.frag");
 
 
 	// load models
 	// -----------
-	Model ourModel("objects/backpack/backpack.obj");
+	Model backpack("objects/backpack/backpack.obj");
 
-	cout << "Total number of meshes: " << ourModel.meshes.size() << endl;
-	cout << "Total number of textures loaded: " << ourModel.textures_loaded.size() << endl;
+	cout << "Total number of meshes: " << backpack.meshes.size() << endl;
+	cout << "Total number of textures loaded: " << backpack.textures_loaded.size() << endl;
 	int nVertSum = 0;
-	for (Mesh mesh : ourModel.meshes) {
+	for (Mesh mesh : backpack.meshes) {
 		nVertSum += mesh.vertices.size();
 	}
 	cout << "Total number of vertices: " << nVertSum << endl;
@@ -408,7 +374,7 @@ int main() {
 		lightingShader.setMat4("model", model);
 
 		// Circle around the scene over time
-		/*pointLightPositions[0].x = sin(glfwGetTime()) * radius;
+		pointLightPositions[0].x = sin(glfwGetTime()) * radius;
 		pointLightPositions[0].z = cos(glfwGetTime()) * radius;
 		lightingShader.setVec3("pointLights[0].position", pointLightPositions[0]);
 
@@ -416,7 +382,7 @@ int main() {
 		if (calcSpotLight) {
 			lightingShader.setVec3("spotLight.position", camera.Position);
 			lightingShader.setVec3("spotLight.direction", camera.Front);
-		}*/
+		}
 
 		// Drawing skybox first
 		/*lDepthMask(GL_FALSE);
@@ -425,6 +391,7 @@ int main() {
 		view = glm::mat4(glm::mat3(camera.GetViewMatrix()));  // Removing the translation section of transformation matrices.
 		                                                      // This removes any translation, but keeps all rotation transformations so the user can still look around the scene.
 		skyboxShader.setMat4("view", view);
+		view = camera.GetViewMatrix();
 		glBindVertexArray(skyboxVAO);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -433,7 +400,6 @@ int main() {
 		// Draw 4 light objs
 		lightCubeShader.use();
 		lightCubeShader.setMat4("projection", projection);
-		view = camera.GetViewMatrix();
 		lightCubeShader.setMat4("view", view);
 		for (unsigned int i = 0; i < 4; i++)
 		{
@@ -450,15 +416,31 @@ int main() {
 		// Move up
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(0.0f, 1.75f, 0.0f));
-		lightingShader.setMat4("model", model);
-		ourModel.Draw(lightingShader);
+		/*lightingShader.setMat4("model", model);
+		backpack.Draw(lightingShader);*/
+		// Refractive backpack
+		refractionShader.use();
+		refractionShader.setMat4("model", model);
+		refractionShader.setMat4("view", view);
+		refractionShader.setMat4("projection", projection);
+		refractionShader.setVec3("cameraPos", camera.Position);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+		backpack.Draw(refractionShader);
+
 
 		glDisable(GL_CULL_FACE);  // Disable face culling before drawing non-closed shapes
 
 		// Draw floor
-		model = glm::mat4(1.0f);
-		lightingShader.setMat4("model", model);
-		floor.Draw(lightingShader);
+		/*lightingShader.setMat4("model", glm::mat4(1.0f));
+		floor.Draw(lightingShader);*/
+		// Draw reflective floor
+		reflectionShader.use();
+		reflectionShader.setMat4("model", glm::mat4(1.0f));
+		reflectionShader.setMat4("view", view);
+		reflectionShader.setMat4("projection", projection);
+		reflectionShader.setVec3("cameraPos", camera.Position);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+		floor.Draw(reflectionShader);
 
 		glEnable(GL_CULL_FACE);
 
