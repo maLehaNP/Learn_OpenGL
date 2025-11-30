@@ -11,10 +11,10 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "learnopengl/shader.h"
-#include "learnopengl/camera.h"
-#include "learnopengl/mesh.h"
-#include "learnopengl/model.h"
+#include <learnopengl/shader.h>
+#include <learnopengl/camera.h>
+#include <learnopengl/mesh.h>
+#include <learnopengl/model.h>
 
 using namespace std;
 
@@ -57,7 +57,7 @@ int main() {
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	// Window creation
-	GLFWwindow* window = glfwCreateWindow(screen_width, screen_height, "Cubemaps", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(screen_width, screen_height, "Advanced GLSL", NULL, NULL);
 	if (window == NULL) {
 		std::cout << "Failed to create window" << std::endl;
 		glfwTerminate();
