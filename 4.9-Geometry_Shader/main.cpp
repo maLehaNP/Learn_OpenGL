@@ -13,12 +13,12 @@
 
 #include <learnopengl/shader.h>
 #include <learnopengl/camera.h>
-//#include <learnopengl/mesh.h>
-//#include <learnopengl/model.h>
+#include <learnopengl/mesh.h>
+#include <learnopengl/model.h>
 
-#include "shader2.h"
-#include "mesh2.h"
-#include "model2.h"
+//#include "shader2.h"
+//#include "mesh2.h"
+//#include "model2.h"
 
 using namespace std;
 
@@ -29,6 +29,7 @@ void processInput(GLFWwindow* window);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 unsigned int loadCubemap(vector<std::string> faces);
+void setLightsUniforms(Shader& shader, glm::vec3 pointLightPositions[]);
 
 
 
@@ -94,20 +95,20 @@ int main() {
 
 	// Build and compile shader
 	Shader lightingShader("shaders/phongShader.vert", "shaders/phongShader.frag");
-	Shader2 explosionShader("explosionShader.vert", "explosionShader.geom", "explosionShader.frag");
+	Shader explosionShader("explosionShader.vert", "explosionShader.geom", "explosionShader.frag");
 	Shader lightCubeShader("shaders/light_cube.vert", "shaders/light_cube.frag");
 	Shader skyboxShader("shaders/skyboxShader.vert", "shaders/skyboxShader.frag");
-	Shader2 normalDisplayShader("normalShader.vert", "normalShader.geom", "normalShader.frag");
+	Shader normalDisplayShader("normalShader.vert", "normalShader.geom", "normalShader.frag");
 
 
 	// load models
 	// -----------
-	Model2 backpack("objects/backpack/backpack.obj");
+	Model backpack("objects/backpack/backpack.obj");
 
 	cout << "Total number of meshes: " << backpack.meshes.size() << endl;
 	cout << "Total number of textures loaded: " << backpack.textures_loaded.size() << endl;
 	int nVertSum = 0;
-	for (Mesh2 mesh : backpack.meshes) {
+	for (Mesh mesh : backpack.meshes) {
 		nVertSum += mesh.vertices.size();
 	}
 	cout << "Total number of vertices: " << nVertSum << endl;
@@ -120,9 +121,9 @@ int main() {
 		glm::vec3(0.0f,  0.5f, -3.0f)
 	};
 
-	Model2 cube("objects/cube/cube.obj");
+	Model cube("objects/cube/cube.obj");
 
-	Model2 floor("objects/floor/floor.obj");
+	Model floor("objects/floor/floor.obj");
 
 	vector<std::string> faces
 	{
@@ -219,51 +220,13 @@ int main() {
 	
 	// Shader configuration --------------------------------------------------------
 
-	lightingShader.use();
-	lightingShader.setFloat("material.shininess", 32.0f);
-
-	lightingShader.setVec3("viewPos", camera.Position);
-
-	// Direct light
-	lightingShader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);  // Light pointing downwards
-	lightingShader.setVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
-	lightingShader.setVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
-	lightingShader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
-	// Point light 1
-	lightingShader.setVec3("pointLights[0].position", pointLightPositions[0]);
-	lightingShader.setVec3("pointLights[0].ambient", 0.05f, 0.05f, 0.05f);
-	lightingShader.setVec3("pointLights[0].diffuse", 0.8f, 0.8f, 0.8f);
-	lightingShader.setVec3("pointLights[0].specular", 1.0f, 1.0f, 1.0f);
-	lightingShader.setFloat("pointLights[0].constant", 1.0f);
-	lightingShader.setFloat("pointLights[0].linear", 0.09f);
-	lightingShader.setFloat("pointLights[0].quadratic", 0.032f);
-	// Point light 2
-	lightingShader.setVec3("pointLights[1].position", pointLightPositions[1]);
-	lightingShader.setVec3("pointLights[1].ambient", 0.05f, 0.05f, 0.05f);
-	lightingShader.setVec3("pointLights[1].diffuse", 0.8f, 0.8f, 0.8f);
-	lightingShader.setVec3("pointLights[1].specular", 1.0f, 1.0f, 1.0f);
-	lightingShader.setFloat("pointLights[1].constant", 1.0f);
-	lightingShader.setFloat("pointLights[1].linear", 0.09f);
-	lightingShader.setFloat("pointLights[1].quadratic", 0.032f);
-	// Point light 3
-	lightingShader.setVec3("pointLights[2].position", pointLightPositions[2]);
-	lightingShader.setVec3("pointLights[2].ambient", 0.05f, 0.05f, 0.05f);
-	lightingShader.setVec3("pointLights[2].diffuse", 0.8f, 0.8f, 0.8f);
-	lightingShader.setVec3("pointLights[2].specular", 1.0f, 1.0f, 1.0f);
-	lightingShader.setFloat("pointLights[2].constant", 1.0f);
-	lightingShader.setFloat("pointLights[2].linear", 0.09f);
-	lightingShader.setFloat("pointLights[2].quadratic", 0.032f);
-	// Point light 4
-	lightingShader.setVec3("pointLights[3].position", pointLightPositions[3]);
-	lightingShader.setVec3("pointLights[3].ambient", 0.05f, 0.05f, 0.05f);
-	lightingShader.setVec3("pointLights[3].diffuse", 0.8f, 0.8f, 0.8f);
-	lightingShader.setVec3("pointLights[3].specular", 1.0f, 1.0f, 1.0f);
-	lightingShader.setFloat("pointLights[3].constant", 1.0f);
-	lightingShader.setFloat("pointLights[3].linear", 0.09f);
-	lightingShader.setFloat("pointLights[3].quadratic", 0.032f);
+	setLightsUniforms(lightingShader, pointLightPositions);
+	setLightsUniforms(explosionShader, pointLightPositions);
+	setLightsUniforms(normalDisplayShader, pointLightPositions);
 	
 
 	// Runtime variables
+
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
 	double currentTime;
@@ -273,7 +236,6 @@ int main() {
 	double drawingTime;
 	double sleptTime = 0.0;
 	double fpsTick = 1.0 / 60.0;  // Fraction of second equal to 1 frame.
-	//std::cout << "FPS tick: " << fpsTick * 1000 << " ms" << std::endl;
 	double renderStartTime;
 	double renderEndTime;
 	double renderTime = 0.0;
@@ -283,11 +245,10 @@ int main() {
 
 	glm::mat4 view;
 	glm::mat4 model = glm::mat4(1.0f);
-	lightingShader.setMat4("model", model);
 
 	std::map<float, glm::vec3> sorted;
 
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	//glLineWidth(2.0f);
 	/*glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
 	glPointSize(2.0f);*/
@@ -358,23 +319,25 @@ int main() {
 
 		lightingShader.use();
 		/*explosionShader.use();
-		explosionShader.setFloat("time", currentTime);*/
+		explosionShader.setFloat("time", currentTime);
+		explosionShader.setVec3("pointLights[0].position", pointLightPositions[0]);*/
 
 		// Draw backpack
 		// Move up
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(0.0f, 1.75f, 0.0f));
+
 		lightingShader.setMat4("model", model);
 		backpack.Draw(lightingShader.ID);
 		/*explosionShader.setMat4("model", model);
 		backpack.Draw(explosionShader.ID);*/
 
 		// Draw backpack's normal vectors
-		normalDisplayShader.use();
+		/*normalDisplayShader.use();
 		normalDisplayShader.setMat4("view", view);
 		normalDisplayShader.setMat4("model", model);
 		normalDisplayShader.setMat4("projection", projection);
-		backpack.Draw(normalDisplayShader.ID);
+		backpack.Draw(normalDisplayShader.ID);*/
 
 		lightingShader.use();
 
@@ -490,4 +453,47 @@ unsigned int loadCubemap(vector<std::string> faces)
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
 	return textureID;
+}
+
+void setLightsUniforms(Shader& shader, glm::vec3 pointLightPositions[]) {
+	shader.use();
+	shader.setFloat("material.shininess", 32.0f);
+	// Direct light
+	shader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);  // Light pointing downwards
+	shader.setVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
+	shader.setVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
+	shader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
+	// Point light 1
+	shader.setVec3("pointLights[0].position", pointLightPositions[0]);
+	shader.setVec3("pointLights[0].ambient", 0.05f, 0.05f, 0.05f);
+	shader.setVec3("pointLights[0].diffuse", 0.8f, 0.8f, 0.8f);
+	shader.setVec3("pointLights[0].specular", 1.0f, 1.0f, 1.0f);
+	shader.setFloat("pointLights[0].constant", 1.0f);
+	shader.setFloat("pointLights[0].linear", 0.09f);
+	shader.setFloat("pointLights[0].quadratic", 0.032f);
+	// Point light 2
+	shader.setVec3("pointLights[1].position", pointLightPositions[1]);
+	shader.setVec3("pointLights[1].ambient", 0.05f, 0.05f, 0.05f);
+	shader.setVec3("pointLights[1].diffuse", 0.8f, 0.8f, 0.8f);
+	shader.setVec3("pointLights[1].specular", 1.0f, 1.0f, 1.0f);
+	shader.setFloat("pointLights[1].constant", 1.0f);
+	shader.setFloat("pointLights[1].linear", 0.09f);
+	shader.setFloat("pointLights[1].quadratic", 0.032f);
+	// Point light 3
+	shader.setVec3("pointLights[2].position", pointLightPositions[2]);
+	shader.setVec3("pointLights[2].ambient", 0.05f, 0.05f, 0.05f);
+	shader.setVec3("pointLights[2].diffuse", 0.8f, 0.8f, 0.8f);
+	shader.setVec3("pointLights[2].specular", 1.0f, 1.0f, 1.0f);
+	shader.setFloat("pointLights[2].constant", 1.0f);
+	shader.setFloat("pointLights[2].linear", 0.09f);
+	shader.setFloat("pointLights[2].quadratic", 0.032f);
+	// Point light 4
+	shader.setVec3("pointLights[3].position", pointLightPositions[3]);
+	shader.setVec3("pointLights[3].ambient", 0.05f, 0.05f, 0.05f);
+	shader.setVec3("pointLights[3].diffuse", 0.8f, 0.8f, 0.8f);
+	shader.setVec3("pointLights[3].specular", 1.0f, 1.0f, 1.0f);
+	shader.setFloat("pointLights[3].constant", 1.0f);
+	shader.setFloat("pointLights[3].linear", 0.09f);
+	shader.setFloat("pointLights[3].quadratic", 0.032f);
+	glUseProgram(0);
 }
