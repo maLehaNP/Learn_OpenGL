@@ -16,10 +16,6 @@
 #include <learnopengl/mesh.h>
 #include <learnopengl/model.h>
 
-//#include "shader2.h"
-//#include "mesh2.h"
-//#include "model2.h"
-
 using namespace std;
 
 
@@ -222,7 +218,6 @@ int main() {
 
 	setLightsUniforms(lightingShader, pointLightPositions);
 	setLightsUniforms(explosionShader, pointLightPositions);
-	setLightsUniforms(normalDisplayShader, pointLightPositions);
 	
 
 	// Runtime variables
@@ -333,11 +328,11 @@ int main() {
 		backpack.Draw(explosionShader.ID);*/
 
 		// Draw backpack's normal vectors
-		/*normalDisplayShader.use();
+		normalDisplayShader.use();
 		normalDisplayShader.setMat4("view", view);
 		normalDisplayShader.setMat4("model", model);
 		normalDisplayShader.setMat4("projection", projection);
-		backpack.Draw(normalDisplayShader.ID);*/
+		backpack.Draw(normalDisplayShader.ID);
 
 		lightingShader.use();
 

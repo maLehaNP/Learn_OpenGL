@@ -18,6 +18,9 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="glad.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="D:\OpenGL\includes\learnopengl\mesh.h">
@@ -29,5 +32,16 @@
     <ClInclude Include="D:\OpenGL\includes\learnopengl\shader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="D:\OpenGL\includes\learnopengl\camera.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="assimp-vc143-mt.dll" />
+    <None Include="shaders\shader.frag" />
+    <None Include="shaders\shader.vert" />
+    <None Include="shaders\rockShader.frag" />
+    <None Include="shaders\rockShader.vert" />
+    <None Include="shaders\instanceShader.vert" />
   </ItemGroup>
 </Project>
