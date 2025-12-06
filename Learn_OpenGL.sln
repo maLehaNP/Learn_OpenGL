@@ -53,6 +53,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "4.9-Geometry_Shader", "4.9-
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "4.10-Instancing", "4.10-Instancing\4.10-Instancing.vcxproj", "{E130826F-554B-4D28-9FEB-9DAEDF6D3A2E}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "5.1-Advanced_Lighting", "5.1-Advanced_Lighting\5.1-Advanced_Lighting.vcxproj", "{64AE0D67-033B-4260-B1CD-CF66BF5DF6C6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -261,6 +263,14 @@ Global
 		{E130826F-554B-4D28-9FEB-9DAEDF6D3A2E}.Release|x64.Build.0 = Release|x64
 		{E130826F-554B-4D28-9FEB-9DAEDF6D3A2E}.Release|x86.ActiveCfg = Release|Win32
 		{E130826F-554B-4D28-9FEB-9DAEDF6D3A2E}.Release|x86.Build.0 = Release|Win32
+		{64AE0D67-033B-4260-B1CD-CF66BF5DF6C6}.Debug|x64.ActiveCfg = Debug|x64
+		{64AE0D67-033B-4260-B1CD-CF66BF5DF6C6}.Debug|x64.Build.0 = Debug|x64
+		{64AE0D67-033B-4260-B1CD-CF66BF5DF6C6}.Debug|x86.ActiveCfg = Debug|Win32
+		{64AE0D67-033B-4260-B1CD-CF66BF5DF6C6}.Debug|x86.Build.0 = Debug|Win32
+		{64AE0D67-033B-4260-B1CD-CF66BF5DF6C6}.Release|x64.ActiveCfg = Release|x64
+		{64AE0D67-033B-4260-B1CD-CF66BF5DF6C6}.Release|x64.Build.0 = Release|x64
+		{64AE0D67-033B-4260-B1CD-CF66BF5DF6C6}.Release|x86.ActiveCfg = Release|Win32
+		{64AE0D67-033B-4260-B1CD-CF66BF5DF6C6}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
