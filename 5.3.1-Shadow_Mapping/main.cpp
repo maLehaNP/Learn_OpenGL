@@ -168,7 +168,7 @@ int main() {
 	glGenFramebuffers(1, &depthMapFBO);
 
 	// 2D texture that we'll use as the framebuffer's depth buffer
-	const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+	const unsigned int SHADOW_WIDTH = 1024 * 2, SHADOW_HEIGHT = 1024 * 2;
 	unsigned int depthMap;
 	glGenTextures(1, &depthMap);
 	glBindTexture(GL_TEXTURE_2D, depthMap);
@@ -247,6 +247,9 @@ int main() {
 	bool animate = true;
 	ImVec4 clear_color = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
 
+	float texelSizeConst = 0.5f;
+	int RadiusPCF = 1;
+
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 
@@ -301,6 +304,9 @@ int main() {
 
 		shader.use();
 		shader.setVec3("viewPos", camera.Position);
+		shader.setFloat("texelSizeConst", texelSizeConst);
+		shader.setInt("RadiusPCF", RadiusPCF);
+
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, depthMap);
 		renderScene(shader, floor, cube);
@@ -327,6 +333,9 @@ int main() {
 		ImGui::Text("Camera Front (%.2f, %.2f, %.2f)", camera.Front.x, camera.Front.y, camera.Front.z);
 		ImGui::Text("Camera Up    (%.2f, %.2f, %.2f)", camera.Up.x, camera.Up.y, camera.Up.z);
 		ImGui::Text("Camera Right (%.2f, %.2f, %.2f)", camera.Right.x, camera.Right.y, camera.Right.z);
+
+		ImGui::SliderFloat("Texel size const", &texelSizeConst, 0.0f, 1.0f);  // Edit 1 float using a slider from 0.0f to 1.0f
+		ImGui::SliderInt("PCF radius", &RadiusPCF, 0, 4);
 
 		float deltaTimeAvg = 0.0f;
 		float renderTimeAvg = 0.0f;

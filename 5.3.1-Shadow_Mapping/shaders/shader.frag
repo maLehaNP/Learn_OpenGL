@@ -15,7 +15,10 @@ uniform sampler2D shadowMap;
 
 uniform vec3 lightPos;
 uniform vec3 viewPos;
+
 uniform vec3 lightDir;
+uniform float texelSizeConst;
+uniform int RadiusPCF;
 
 
 float ShadowCalculation(vec4 fragPosLightSpace)
@@ -36,21 +39,21 @@ float ShadowCalculation(vec4 fragPosLightSpace)
 
     // check whether current frag pos is in shadow
     //float bias = 0.005;
-    float bias = max(0.05 * (1.0 - dot(fs_in.Normal, lightDir)), 0.005);
+    float bias = max(0.05 * (1.0 - dot(fs_in.Normal, lightDir)), 0.001);  // Max 0.05, min 0.005 (default)
     //float shadow = currentDepth - bias > closestDepth  ? 1.0 : 0.0;
 
     // PCF
     float shadow = 0.0;
-    vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
-    for(int x = -1; x <= 1; ++x)
+    vec2 texelSize = texelSizeConst / textureSize(shadowMap, 0);
+    for(int x = -RadiusPCF; x <= RadiusPCF; ++x)
     {
-        for(int y = -1; y <= 1; ++y)
+        for(int y = -RadiusPCF; y <= RadiusPCF; ++y)
         {
             float pcfDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r; 
             shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;        
         }    
     }
-    shadow /= 9.0;
+    shadow /= (1 + RadiusPCF * 2) * (1 + RadiusPCF * 2);
 
     if(projCoords.z > 1.0)
         shadow = 0.0;
