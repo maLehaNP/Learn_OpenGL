@@ -16,7 +16,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="assimp-vc143-mt.dll" />
-    <None Include="debugDepthQuad.frag" />
+    <None Include="shaders\shader.frag" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="glad.c">

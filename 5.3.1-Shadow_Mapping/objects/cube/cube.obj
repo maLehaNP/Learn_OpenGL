@@ -1,48 +1,61 @@
-v -0.5 -0.5 -0.5  # back left down
-v 0.5 -0.5 -0.5  # back right down
-v 0.5 0.5 -0.5  # back right up
-v -0.5 0.5 -0.5  # back left up
+v -1.0 -1.0 -1.0  # back left down
+v 1.0 -1.0 -1.0  # back right down
+v 1.0 1.0 -1.0  # back right up
+v -1.0 1.0 -1.0  # back left up
 
-v -0.5 -0.5 0.5  # front left down
-v 0.5 -0.5 0.5  # front right down
-v 0.5 0.5 0.5  # front right up
-v -0.5 0.5 0.5  # front left up
+v -1.0 -1.0 1.0  # front left down
+v 1.0 -1.0 1.0  # front right down
+v 1.0 1.0 1.0  # front right up
+v -1.0 1.0 1.0  # front left up
 
-v -0.5 0.5 0.5  # left up front
-v -0.5 0.5 -0.5  # left up back
-v -0.5 -0.5 -0.5  # left down back
-v -0.5 -0.5 0.5  # left down front
+v -1.0 1.0 1.0  # left up front
+v -1.0 1.0 -1.0  # left up back
+v -1.0 -1.0 -1.0  # left down back
+v -1.0 -1.0 1.0  # left down front
 
-v 0.5 0.5 0.5  # right u f
-v 0.5 0.5 -0.5  # right u b
-v 0.5 -0.5 -0.5  # right d b
-v 0.5 -0.5 0.5  # right d f
+v 1.0 1.0 1.0  # right u f
+v 1.0 1.0 -1.0  # right u b
+v 1.0 -1.0 -1.0  # right d b
+v 1.0 -1.0 1.0  # right d f
 
-v -0.5 -0.5 -0.5  # down l b
-v 0.5 -0.5 -0.5  # down r b
-v 0.5 -0.5  0.5  # down r f
-v -0.5 -0.5 0.5  # down l f
+v -1.0 -1.0 -1.0  # down l b
+v 1.0 -1.0 -1.0  # down r b
+v 1.0 -1.0  1.0  # down r f
+v -1.0 -1.0 1.0  # down l f
 
-v -0.5 0.5 -0.5  # up l b
-v 0.5 0.5 -0.5  # up r b
-v 0.5 0.5 0.5  # up r f
-v -0.5 0.5 0.5  # up l f
+v -1.0 1.0 -1.0  # up l b
+v 1.0 1.0 -1.0  # up r b
+v 1.0 1.0 1.0  # up r f
+v -1.0 1.0 1.0  # up l f
 
+vn 0.0 0.0 -1.0
+vn 0.0 0.0 1.0
+vn -1.0 0.0 0.0
+vn 1.0 0.0 0.0
+vn 0.0 1.0 0.0
+vn 0.0 -1.0 0.0
+
+vt 1.0 0.0
+vt 0.0 0.0
+vt 0.0 1.0
+vt 1.0 1.0
+
+newmtl Scene_-_Root
 # back
-f 1 3 2
-f 1 4 3
+f 1/1/1 3/1/3 2/1/2
+f 1/1/1 4/1/4 3/1/3
 #front
-f 5 6 7
-f 5 7 8
+f 5/2/1 6/2/3 7/2/2
+f 5/2/1 7/2/4 8/2/3
 # left
-f 9 10 11
-f 9 11 12
+f 9/3/1 10/3/3 11/3/2
+f 9/3/1 11/3/4 12/3/3
 # right
-f 13 15 14
-f 13 16 15
+f 13/4/1 15/4/3 14/4/2
+f 13/4/1 16/4/4 15/4/3
 # down
-f 17 18 19
-f 17 19 20
+f 17/5/1 18/5/3 19/5/2
+f 17/5/1 19/5/4 20/5/3
 # up
-f 21 23 22
-f 21 24 23
+f 21/6/1 23/6/3 22/6/2
+f 21/6/1 24/6/4 23/6/3

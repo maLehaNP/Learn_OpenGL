@@ -31,8 +31,8 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+void adjustPerspective();
 void renderScene(Shader& shader, Model& floor, Model& cube);
-void renderCube();
 void renderQuad();
 
 
@@ -48,14 +48,15 @@ float lastX = screen_width / 2.0f;
 float lastY = screen_height / 2.0f;
 bool firstMouse = true;
 
-// Uniform buffer object
-unsigned int uboMatrices;
+unsigned int uboMatrices;  // Uniform buffer object
 
 float farPlane = 100.0f;
 glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), screen_width / screen_height, 0.1f, farPlane);
 
 int cursor = GLFW_CURSOR_DISABLED;
 bool cursorKeyPressed;
+
+glm::vec3 lightPos(-2.0f, 4.0f, -1.0f);
 
 
 
@@ -119,24 +120,47 @@ int main() {
 	// ---------------
 	// Configure global opengl state
 	glEnable(GL_DEPTH_TEST);
-	//glEnable(GL_CULL_FACE);
-	//glEnable(GL_MULTISAMPLE);
-	//glEnable(GL_FRAMEBUFFER_SRGB);  // Gamma correction
+	glEnable(GL_CULL_FACE);
+	glEnable(GL_MULTISAMPLE);
+	glEnable(GL_FRAMEBUFFER_SRGB);  // Gamma correction
 
 	stbi_set_flip_vertically_on_load(true);
 
 
 	// Shaders
 	// -------
-	//Shader shader("shaders/blinnPhongShader.vert", "shaders/blinnPhongShader.frag");
+	Shader shader("shaders/shader.vert", "shaders/shader.frag");
 	Shader simpleDepthShader("shaders/simpleDepthShader.vert", "shaders/simpleDepthShader.frag");
 	Shader debugDepthQuad("shaders/debugDepthQuad.vert", "shaders/debugDepthQuad.frag");
+	Shader lightShader("shaders/lightShader.vert", "shaders/lightShader.frag");
+
+	// configure a uniform buffer object
+	unsigned int UBI = glGetUniformBlockIndex(shader.ID, "Matrices");
+	glUniformBlockBinding(shader.ID, UBI, 0);
+	unsigned int LightUBI = glGetUniformBlockIndex(lightShader.ID, "Matrices");
+	glUniformBlockBinding(lightShader.ID, LightUBI, 0);
+
+	// Now actually create the buffer (var already created as global)
+	glGenBuffers(1, &uboMatrices);
+	glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
+	glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4), NULL, GL_STATIC_DRAW);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+	// bind the uniform buffer object to the same binding point
+	//glBindBufferRange(GL_UNIFORM_BUFFER, 0, uboMatrices, 0, 2 * sizeof(glm::mat4));
+	glBindBufferBase(GL_UNIFORM_BUFFER, 0, uboMatrices);
+
+	// store the projection matrix (projection also global)
+	glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
+	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(projection));
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 
 	// Models
 	// ------
 	Model floor("objects/floor/floor.obj");
 	Model cube("objects/cube/cube.obj");
+	Model lightCube("objects/lightCube/lightCube.obj");
 
 
 	// configure depth map FBO
@@ -176,9 +200,8 @@ int main() {
 	float near_plane = 1.0f, far_plane = 7.5f;
 	glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
 
-	//glm::vec3 lightPos(-2.0f, 4.0f, -1.0f);
 	glm::mat4 lightView = glm::lookAt(
-		glm::vec3(-2.0f, 4.0f, -1.0f),  // lightPos
+		lightPos,
 		glm::vec3(0.0f, 0.0f, 0.0f),
 		glm::vec3(0.0f, 1.0f, 0.0f)
 	);
@@ -189,9 +212,15 @@ int main() {
 	// shader configuration
 	// --------------------
 	simpleDepthShader.use();
-	simpleDepthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);  // For static light done one time
+	simpleDepthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
 	debugDepthQuad.use();
 	debugDepthQuad.setInt("depthMap", 0);
+	shader.use();
+	shader.setVec3("lightPos", lightPos);
+	shader.setInt("diffuseTexture", 0);
+	shader.setInt("shadowMap", 1);
+	shader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+
 
 
 	// Runtime variables
@@ -255,9 +284,31 @@ int main() {
 		debugDepthQuad.use();
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, depthMap);
-		renderQuad();
-		 
+		//renderQuad();
 		
+
+		// 2. render scene as normal using the generated depth/shadow map  
+		// --------------------------------------------------------------
+		view = camera.GetViewMatrix();
+		glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
+		glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+		shader.use();
+		shader.setVec3("viewPos", camera.Position);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, floor.textures_loaded[0].id);  // Same texture for floor and cube
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, depthMap);
+		renderScene(shader, floor, cube);
+
+		lightShader.use();
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, lightPos);
+		lightShader.setMat4("model", model);
+		lightCube.Draw(lightShader);
+		
+
 		// ImGui
 		// -----
 		ImGui_ImplOpenGL3_NewFrame();
@@ -297,6 +348,7 @@ int main() {
 	}
 
 	// Cleanup
+	// -------
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
@@ -317,8 +369,6 @@ void renderScene(Shader& shader, Model& floor, Model& cube)
 	model = glm::scale(model, glm::vec3(5.0f, 1.0f, 5.0f));
 	shader.setMat4("model", model);
 	floor.Draw(shader);
-	//render
-
 	// cubes
 	model = glm::mat4(1.0f);
 	model = glm::translate(model, glm::vec3(0.0f, 1.5f, 0.0));
@@ -326,91 +376,16 @@ void renderScene(Shader& shader, Model& floor, Model& cube)
 	shader.setMat4("model", model);
 	cube.Draw(shader);
 	model = glm::mat4(1.0f);
-	model = glm::translate(model, glm::vec3(2.0f, 0.0f, 1.0));
+	model = glm::translate(model, glm::vec3(2.0f, 0.5f, 1.0));
 	model = glm::scale(model, glm::vec3(0.5f));
 	shader.setMat4("model", model);
 	cube.Draw(shader);
 	model = glm::mat4(1.0f);
-	model = glm::translate(model, glm::vec3(-1.0f, 0.0f, 2.0));
+	model = glm::translate(model, glm::vec3(-1.0f, 0.5f, 2.0));
 	model = glm::rotate(model, glm::radians(60.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
 	model = glm::scale(model, glm::vec3(0.25));
 	shader.setMat4("model", model);
 	cube.Draw(shader);
-}
-
-// renderCube() renders a 1x1 3D cube in NDC.
-// -------------------------------------------------
-unsigned int cubeVAO = 0;
-unsigned int cubeVBO = 0;
-void renderCube()
-{
-	// initialize (if necessary)
-	if (cubeVAO == 0)
-	{
-		float vertices[] = {
-			// back face
-			-1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f, // bottom-left
-			 1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f, // top-right
-			 1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 0.0f, // bottom-right         
-			 1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f, // top-right
-			-1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f, // bottom-left
-			-1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 1.0f, // top-left
-			// front face
-			-1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f, // bottom-left
-			 1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 0.0f, // bottom-right
-			 1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f, // top-right
-			 1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f, // top-right
-			-1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 1.0f, // top-left
-			-1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f, // bottom-left
-			// left face
-			-1.0f,  1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-right
-			-1.0f,  1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 1.0f, // top-left
-			-1.0f, -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-left
-			-1.0f, -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-left
-			-1.0f, -1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 0.0f, // bottom-right
-			-1.0f,  1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-right
-			// right face
-			 1.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-left
-			 1.0f, -1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-right
-			 1.0f,  1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 1.0f, // top-right         
-			 1.0f, -1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-right
-			 1.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-left
-			 1.0f, -1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 0.0f, // bottom-left     
-			 // bottom face
-			 -1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
-			  1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 1.0f, // top-left
-			  1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f, // bottom-left
-			  1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f, // bottom-left
-			 -1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 0.0f, // bottom-right
-			 -1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
-			 // top face
-			 -1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f, // top-left
-			  1.0f,  1.0f , 1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f, // bottom-right
-			  1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 1.0f, // top-right     
-			  1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f, // bottom-right
-			 -1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f, // top-left
-			 -1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 0.0f  // bottom-left        
-		};
-		glGenVertexArrays(1, &cubeVAO);
-		glGenBuffers(1, &cubeVBO);
-		// fill buffer
-		glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-		// link vertex attributes
-		glBindVertexArray(cubeVAO);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		glBindVertexArray(0);
-	}
-	// render Cube
-	glBindVertexArray(cubeVAO);
-	glDrawArrays(GL_TRIANGLES, 0, 36);
-	glBindVertexArray(0);
 }
 
 // renderQuad() renders a 1x1 XY quad in NDC
@@ -448,10 +423,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
 	camera.ProcessMouseScroll(static_cast<float>(yoffset));
 
-	projection = glm::perspective(glm::radians(camera.Zoom), screen_width / screen_height, 0.1f, farPlane);
-	glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
-	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(projection));
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	adjustPerspective();
 }
 
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
@@ -517,6 +489,10 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 	screen_height = static_cast<float>(height);
 	glViewport(0, 0, width, height);
 
+	adjustPerspective();
+}
+
+void adjustPerspective() {
 	projection = glm::perspective(glm::radians(camera.Zoom), screen_width / screen_height, 0.1f, farPlane);
 	glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
 	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(projection));
