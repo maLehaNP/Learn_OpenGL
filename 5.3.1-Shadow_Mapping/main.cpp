@@ -7,7 +7,6 @@
 #include <thread>
 #include <chrono>
 #include <deque>
-using namespace std;
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -32,6 +31,9 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+void renderScene(Shader& shader, Model& floor, Model& cube);
+void renderCube();
+void renderQuad();
 
 
 // Screen
@@ -55,11 +57,11 @@ glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), screen_width 
 int cursor = GLFW_CURSOR_DISABLED;
 bool cursorKeyPressed;
 
-Model floor("objects/floor/floor.obj");
-Model cube("objects/cube/cube.obj");
 
 
 int main() {
+	// GLFW
+	// ----
 	// GLFW initialization
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -84,6 +86,8 @@ int main() {
 	glfwSetScrollCallback(window, scroll_callback);
 
 
+	// ImGui setup
+	// -----------
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -102,16 +106,17 @@ int main() {
 
 
 	// GLAD: load all OpenGL function pointers
+	// ---------------------------------------
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
 		std::cout << "Failed to init GLAD" << std::endl;
 		return -1;
 	}
-
-	// Successfully loaded OpenGL
 	printf("Loaded OpenGL %d.%d\n", GLVersion.major, GLVersion.minor);
 	std::cout << endl;
 
 
+	// Global settings
+	// ---------------
 	// Configure global opengl state
 	glEnable(GL_DEPTH_TEST);
 	//glEnable(GL_CULL_FACE);
@@ -120,36 +125,28 @@ int main() {
 
 	stbi_set_flip_vertically_on_load(true);
 
+
 	// Shaders
+	// -------
 	//Shader shader("shaders/blinnPhongShader.vert", "shaders/blinnPhongShader.frag");
 	Shader simpleDepthShader("shaders/simpleDepthShader.vert", "shaders/simpleDepthShader.frag");
 	Shader debugDepthQuad("shaders/debugDepthQuad.vert", "shaders/debugDepthQuad.frag");
 
-	// configure a uniform buffer object
-	/*unsigned int uniformBlockIndex = glGetUniformBlockIndex(shader.ID, "Matrices");
-	glUniformBlockBinding(shader.ID, uniformBlockIndex, 0);
-	unsigned int uniformBlockIndexLight = glGetUniformBlockIndex(lightCubeShader.ID, "Matrices");
-	glUniformBlockBinding(lightCubeShader.ID, uniformBlockIndexLight, 0);
-	// Now actually create the buffer (var already created as global)
-	glGenBuffers(1, &uboMatrices);
-	glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
-	glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4), NULL, GL_STATIC_DRAW);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
-	glBindBufferRange(GL_UNIFORM_BUFFER, 0, uboMatrices, 0, 2 * sizeof(glm::mat4));
-	// store the projection matrix
-	glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
-	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(projection));
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);*/
 
-	
+	// Models
+	// ------
+	Model floor("objects/floor/floor.obj");
+	Model cube("objects/cube/cube.obj");
 
 
-
+	// configure depth map FBO
+	// -----------------------
+	// Framebuffer object for rendering the depth map
 	unsigned int depthMapFBO;
 	glGenFramebuffers(1, &depthMapFBO);
 
+	// 2D texture that we'll use as the framebuffer's depth buffer
 	const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
-
 	unsigned int depthMap;
 	glGenTextures(1, &depthMap);
 	glBindTexture(GL_TEXTURE_2D, depthMap);
@@ -165,20 +162,36 @@ int main() {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
+	// We can attach it as the framebuffer's depth buffer
 	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+	// Tell OpenGL we're not going to render any color data (FBO is not complete without a color buffer)
 	glDrawBuffer(GL_NONE);
 	glReadBuffer(GL_NONE);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+
+	// Light space transform
+	// ---------------------
 	float near_plane = 1.0f, far_plane = 7.5f;
 	glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
 
-	glm::mat4 lightView = glm::lookAt(glm::vec3(-2.0f, 4.0f, -1.0f),
+	//glm::vec3 lightPos(-2.0f, 4.0f, -1.0f);
+	glm::mat4 lightView = glm::lookAt(
+		glm::vec3(-2.0f, 4.0f, -1.0f),  // lightPos
 		glm::vec3(0.0f, 0.0f, 0.0f),
-		glm::vec3(0.0f, 1.0f, 0.0f));
+		glm::vec3(0.0f, 1.0f, 0.0f)
+	);
 
 	glm::mat4 lightSpaceMatrix = lightProjection * lightView;
+
+
+	// shader configuration
+	// --------------------
+	simpleDepthShader.use();
+	simpleDepthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);  // For static light done one time
+	debugDepthQuad.use();
+	debugDepthQuad.setInt("depthMap", 0);
 
 
 	// Runtime variables
@@ -206,6 +219,7 @@ int main() {
 	// Render loop
 	while (!glfwWindowShouldClose(window)) {
 		// Per-frame time logic
+		// --------------------
 		renderStartTime = glfwGetTime();
 		currentTime = glfwGetTime();
 		deltaTime = currentTime - lastTime;
@@ -215,38 +229,45 @@ int main() {
 		render_times[times_offset] = renderTime * 1000;
 		times_offset = (times_offset + 1) % TIMES_SAMPLE_AMOUNT;
 
+
+		// Pre-render processing
+		// ---------------------
 		glfwPollEvents();
 		processInput(window);
 		glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
-		/*view = camera.GetViewMatrix();
-		glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
-		glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
-		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+		// 1. render depth of scene to texture (from light's perspective)
+		// --------------------------------------------------------------
+		simpleDepthShader.use();
+		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+		glClear(GL_DEPTH_BUFFER_BIT);
+		renderScene(simpleDepthShader, floor, cube);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-		shader.use();
-		shader.setVec3("viewPos", camera.Position);
-		shader.setBool("blinn", blinn);
-		floor.Draw(shader);
+		// reset viewport
+		glViewport(0, 0, screen_width, screen_height);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		lightCubeShader.use();
-		cube.Draw(lightCubeShader);*/
-
-
+		// render Depth map to quad for visual debugging
+		debugDepthQuad.use();
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, depthMap);
+		renderQuad();
+		 
 		
-
-
-		// Start the Dear ImGui frame
+		// ImGui
+		// -----
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
+
 		ImGui::NewFrame();
 
-		// 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
-		ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+		ImGui::Begin("Hello, world!");                           // Create a window called "Hello, world!" and append into it.
 
-		ImGui::ColorEdit3("Clear color", (float*)&clear_color); // Edit 3 floats representing a color
+		ImGui::ColorEdit3("Clear color", (float*)&clear_color);  // Edit 3 floats representing a color
 
 		float deltaTimeAvg = 0.0f;
 		float renderTimeAvg = 0.0f;
@@ -257,9 +278,9 @@ int main() {
 		deltaTimeAvg /= (float)TIMES_SAMPLE_AMOUNT;
 		renderTimeAvg /= (float)TIMES_SAMPLE_AMOUNT;
 		char overlay[32];
-		sprintf(overlay, "mov avg %f", deltaTimeAvg);
+		sprintf(overlay, "mov avg %f ms", deltaTimeAvg);
 		ImGui::PlotLines("Frame time", delta_times, TIMES_SAMPLE_AMOUNT, times_offset, overlay, 0.0f, 20.0f, ImVec2(0, 100));
-		sprintf(overlay, "mov avg %f", renderTimeAvg);
+		sprintf(overlay, "mov avg %f ms", renderTimeAvg);
 		ImGui::PlotLines("Render time", render_times, TIMES_SAMPLE_AMOUNT, times_offset, overlay, 0.0f, 5.0f, ImVec2(0, 100));
 
 		ImGui::End();
@@ -269,7 +290,7 @@ int main() {
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 
-		renderEndTime = glfwGetTime();
+		renderEndTime = glfwGetTime();  // Includes ImGui rendering time (+~0.4 ms)
 		renderTime = renderEndTime - renderStartTime;
 
 		glfwSwapBuffers(window);
@@ -289,13 +310,15 @@ int main() {
 
 // renders the 3D scene
 // --------------------
-void renderScene(Shader& shader)
+void renderScene(Shader& shader, Model& floor, Model& cube)
 {
 	// floor
 	glm::mat4 model = glm::mat4(1.0f);
 	model = glm::scale(model, glm::vec3(5.0f, 1.0f, 5.0f));
 	shader.setMat4("model", model);
 	floor.Draw(shader);
+	//render
+
 	// cubes
 	model = glm::mat4(1.0f);
 	model = glm::translate(model, glm::vec3(0.0f, 1.5f, 0.0));
@@ -313,6 +336,112 @@ void renderScene(Shader& shader)
 	model = glm::scale(model, glm::vec3(0.25));
 	shader.setMat4("model", model);
 	cube.Draw(shader);
+}
+
+// renderCube() renders a 1x1 3D cube in NDC.
+// -------------------------------------------------
+unsigned int cubeVAO = 0;
+unsigned int cubeVBO = 0;
+void renderCube()
+{
+	// initialize (if necessary)
+	if (cubeVAO == 0)
+	{
+		float vertices[] = {
+			// back face
+			-1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f, // bottom-left
+			 1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f, // top-right
+			 1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 0.0f, // bottom-right         
+			 1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f, // top-right
+			-1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f, // bottom-left
+			-1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 1.0f, // top-left
+			// front face
+			-1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f, // bottom-left
+			 1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 0.0f, // bottom-right
+			 1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f, // top-right
+			 1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f, // top-right
+			-1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 1.0f, // top-left
+			-1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f, // bottom-left
+			// left face
+			-1.0f,  1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-right
+			-1.0f,  1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 1.0f, // top-left
+			-1.0f, -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-left
+			-1.0f, -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-left
+			-1.0f, -1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 0.0f, // bottom-right
+			-1.0f,  1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-right
+			// right face
+			 1.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-left
+			 1.0f, -1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-right
+			 1.0f,  1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 1.0f, // top-right         
+			 1.0f, -1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-right
+			 1.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-left
+			 1.0f, -1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 0.0f, // bottom-left     
+			 // bottom face
+			 -1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
+			  1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 1.0f, // top-left
+			  1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f, // bottom-left
+			  1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f, // bottom-left
+			 -1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 0.0f, // bottom-right
+			 -1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
+			 // top face
+			 -1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f, // top-left
+			  1.0f,  1.0f , 1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f, // bottom-right
+			  1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 1.0f, // top-right     
+			  1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f, // bottom-right
+			 -1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f, // top-left
+			 -1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 0.0f  // bottom-left        
+		};
+		glGenVertexArrays(1, &cubeVAO);
+		glGenBuffers(1, &cubeVBO);
+		// fill buffer
+		glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+		// link vertex attributes
+		glBindVertexArray(cubeVAO);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+		glEnableVertexAttribArray(2);
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindVertexArray(0);
+	}
+	// render Cube
+	glBindVertexArray(cubeVAO);
+	glDrawArrays(GL_TRIANGLES, 0, 36);
+	glBindVertexArray(0);
+}
+
+// renderQuad() renders a 1x1 XY quad in NDC
+// -----------------------------------------
+unsigned int quadVAO = 0;
+unsigned int quadVBO;
+void renderQuad()
+{
+	if (quadVAO == 0)
+	{
+		float quadVertices[] = {
+			// positions        // texture Coords
+			-1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
+			-1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+			 1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
+			 1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+		};
+		// setup plane VAO
+		glGenVertexArrays(1, &quadVAO);
+		glGenBuffers(1, &quadVBO);
+		glBindVertexArray(quadVAO);
+		glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	}
+	glBindVertexArray(quadVAO);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glBindVertexArray(0);
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
