@@ -15,6 +15,7 @@ uniform sampler2D shadowMap;
 
 uniform vec3 lightPos;
 uniform vec3 viewPos;
+uniform vec3 lightDir;
 
 
 float ShadowCalculation(vec4 fragPosLightSpace)
@@ -34,7 +35,10 @@ float ShadowCalculation(vec4 fragPosLightSpace)
     float currentDepth = projCoords.z;
 
     // check whether current frag pos is in shadow
-    float shadow = currentDepth > closestDepth  ? 1.0 : 0.0;
+    //float shadow = currentDepth > closestDepth  ? 1.0 : 0.0;
+    //float bias = 0.005;
+    float bias = max(0.05 * (1.0 - dot(fs_in.Normal, lightDir)), 0.005);
+    float shadow = currentDepth - bias > closestDepth  ? 1.0 : 0.0;
 
     return shadow;
 }

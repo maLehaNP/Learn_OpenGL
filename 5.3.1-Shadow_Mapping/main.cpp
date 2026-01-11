@@ -43,7 +43,7 @@ float screen_height = 720.0f;
 double deltaTime = 0.0;
 
 // Camera
-Camera camera(glm::vec3(0.0f, 1.0f, 3.0f));
+Camera camera(glm::vec3(0.0f, 1.0f, 0.0f));
 float lastX = screen_width / 2.0f;
 float lastY = screen_height / 2.0f;
 bool firstMouse = true;
@@ -55,8 +55,6 @@ glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), screen_width 
 
 int cursor = GLFW_CURSOR_DISABLED;
 bool cursorKeyPressed;
-
-glm::vec3 lightPos(-2.0f, 4.0f, -1.0f);
 
 
 
@@ -124,7 +122,7 @@ int main() {
 	glEnable(GL_MULTISAMPLE);
 	glEnable(GL_FRAMEBUFFER_SRGB);  // Gamma correction
 
-	stbi_set_flip_vertically_on_load(true);
+	//stbi_set_flip_vertically_on_load(true);
 
 
 	// Shaders
@@ -200,9 +198,11 @@ int main() {
 	float near_plane = 1.0f, far_plane = 7.5f;
 	glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
 
+	glm::vec3 lightPos(-2.0f, 4.0f, -1.0f);
+	glm::vec3 lightTarget(0.0f, 0.0f, 0.0f);
 	glm::mat4 lightView = glm::lookAt(
 		lightPos,
-		glm::vec3(0.0f, 0.0f, 0.0f),
+		lightTarget,
 		glm::vec3(0.0f, 1.0f, 0.0f)
 	);
 
@@ -216,11 +216,12 @@ int main() {
 	debugDepthQuad.use();
 	debugDepthQuad.setInt("depthMap", 0);
 	shader.use();
-	shader.setVec3("lightPos", lightPos);
+	shader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
 	shader.setInt("diffuseTexture", 0);
 	shader.setInt("shadowMap", 1);
-	shader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
-
+	shader.setVec3("lightPos", lightPos);
+	//shader.setVec3("lightDir", lightTarget);
+	shader.setVec3("lightDir", glm::normalize(lightPos - lightTarget));
 
 
 	// Runtime variables
@@ -296,8 +297,6 @@ int main() {
 
 		shader.use();
 		shader.setVec3("viewPos", camera.Position);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, floor.textures_loaded[0].id);  // Same texture for floor and cube
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, depthMap);
 		renderScene(shader, floor, cube);
@@ -316,9 +315,11 @@ int main() {
 
 		ImGui::NewFrame();
 
-		ImGui::Begin("Hello, world!");                           // Create a window called "Hello, world!" and append into it.
+		ImGui::Begin("Debug");                           // Create a window called "Hello, world!" and append into it.
 
 		ImGui::ColorEdit3("Clear color", (float*)&clear_color);  // Edit 3 floats representing a color
+
+		ImGui::Text("Camera pos (%.2f, %.2f, %.2f)", camera.Position.x, camera.Position.y, camera.Position.z);
 
 		float deltaTimeAvg = 0.0f;
 		float renderTimeAvg = 0.0f;
