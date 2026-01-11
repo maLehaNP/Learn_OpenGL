@@ -181,8 +181,12 @@ int main() {
 	);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	/*glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);*/
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 
 	// We can attach it as the framebuffer's depth buffer
 	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
@@ -319,7 +323,10 @@ int main() {
 
 		ImGui::ColorEdit3("Clear color", (float*)&clear_color);  // Edit 3 floats representing a color
 
-		ImGui::Text("Camera pos (%.2f, %.2f, %.2f)", camera.Position.x, camera.Position.y, camera.Position.z);
+		ImGui::Text("Camera Pos   (%.2f, %.2f, %.2f)", camera.Position.x, camera.Position.y, camera.Position.z);
+		ImGui::Text("Camera Front (%.2f, %.2f, %.2f)", camera.Front.x, camera.Front.y, camera.Front.z);
+		ImGui::Text("Camera Up    (%.2f, %.2f, %.2f)", camera.Up.x, camera.Up.y, camera.Up.z);
+		ImGui::Text("Camera Right (%.2f, %.2f, %.2f)", camera.Right.x, camera.Right.y, camera.Right.z);
 
 		float deltaTimeAvg = 0.0f;
 		float renderTimeAvg = 0.0f;
