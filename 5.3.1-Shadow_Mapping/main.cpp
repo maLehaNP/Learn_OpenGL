@@ -201,7 +201,6 @@ int main() {
 	// ---------------------
 	float near_plane = 1.0f, far_plane = 7.5f;
 	//glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-	//glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
 	glm::mat4 lightProjection = glm::perspective(glm::radians(90.0f), (float)SHADOW_WIDTH / SHADOW_HEIGHT, near_plane, far_plane);
 
 	glm::vec3 lightPos(-2.0f, 4.0f, -1.0f);
@@ -217,17 +216,12 @@ int main() {
 
 	// shader configuration
 	// --------------------
-	simpleDepthShader.use();
 	debugDepthQuad.use();
 	debugDepthQuad.setInt("depthMap", 0);
 	shader.use();
-	shader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
 	shader.setInt("diffuseTexture", 0);
 	shader.setInt("shadowMap", 1);
-	shader.setVec3("lightPos", lightPos);
-	//shader.setVec3("lightDir", lightTarget);
-	shader.setVec3("lightDir", glm::normalize(lightPos - lightTarget));
-
+	
 
 	// Runtime variables
 	// Per-frame time logic
@@ -250,6 +244,7 @@ int main() {
 	int RadiusPCF = 2;
 	float lightFOV = 90.0f;
 	bool show_metrics_window = false;
+	bool rotateLight = true;
 
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
@@ -280,6 +275,15 @@ int main() {
 		// --------------------------------------------------------------
 		simpleDepthShader.use();
 		lightProjection = glm::perspective(glm::radians(lightFOV), (float)SHADOW_WIDTH / SHADOW_HEIGHT, near_plane, far_plane);
+		if (rotateLight) {
+			lightPos.x = sin(glfwGetTime()) * 2.25f;
+			lightPos.z = cos(glfwGetTime()) * 2.25f;
+		}
+		lightView = glm::lookAt(
+			lightPos,
+			lightTarget,
+			glm::vec3(0.0f, 1.0f, 0.0f)
+		);
 		lightSpaceMatrix = lightProjection * lightView;
 		simpleDepthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
 
@@ -311,6 +315,10 @@ int main() {
 		shader.setVec3("viewPos", camera.Position);
 		shader.setFloat("texelSizeConst", texelSizeConst);
 		shader.setInt("RadiusPCF", RadiusPCF);
+		shader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+		shader.setVec3("lightPos", lightPos);
+		//shader.setVec3("lightDir", lightTarget);
+		shader.setVec3("lightDir", glm::normalize(lightPos - lightTarget));
 
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, depthMap);
@@ -319,6 +327,7 @@ int main() {
 		lightShader.use();
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, lightPos);
+		model = glm::scale(model, glm::vec3(0.25f));
 		lightShader.setMat4("model", model);
 		lightCube.Draw(lightShader);
 		
@@ -334,20 +343,12 @@ int main() {
 
 		ImGui::ColorEdit3("Clear color", (float*)&clear_color);  // Edit 3 floats representing a color
 
-		ImGui::Text("Camera Pos   (%.2f, %.2f, %.2f)", camera.Position.x, camera.Position.y, camera.Position.z);
-		ImGui::Text("Camera Front (%.2f, %.2f, %.2f)", camera.Front.x, camera.Front.y, camera.Front.z);
-		ImGui::Text("Camera Up    (%.2f, %.2f, %.2f)", camera.Up.x, camera.Up.y, camera.Up.z);
-		ImGui::Text("Camera Right (%.2f, %.2f, %.2f)", camera.Right.x, camera.Right.y, camera.Right.z);
-		ImGui::Text("Camera Yaw %.2f", camera.Yaw);
-		ImGui::Text("Camera Pitch %.2f", camera.Pitch);
-		ImGui::Text("Camera MovementSpeed %.2f", camera.MovementSpeed);
-		ImGui::Text("Camera Zoom %.2f", camera.Zoom);
-
 		ImGui::SliderFloat("Texel size const", &texelSizeConst, 0.0f, 1.0f);  // Edit 1 float using a slider from 0.0f to 1.0f
 		ImGui::SliderInt("PCF radius", &RadiusPCF, 0, 4);
-		ImGui::SliderFloat("Light perspective FOV", &lightFOV, 85.0f, 95.0f);
+		ImGui::SliderFloat("Light perspective FOV", &lightFOV, 70.0f, 110.0f);
+		ImGui::Checkbox("Light rotation", &rotateLight);
 
-		ImGui::Checkbox("Demo Window", &show_metrics_window);
+		ImGui::Checkbox("Show Metrics Window", &show_metrics_window);
 
 		float deltaTimeAvg = 0.0f;
 		float renderTimeAvg = 0.0f;
@@ -363,13 +364,24 @@ int main() {
 		sprintf(overlay, "mov avg %f ms", renderTimeAvg);
 		ImGui::PlotLines("Render time", render_times, TIMES_SAMPLE_AMOUNT, times_offset, overlay, 0.0f, 5.0f, ImVec2(0, 100));
 
+		ImGui::Text("Camera Pos   (%.2f, %.2f, %.2f)", camera.Position.x, camera.Position.y, camera.Position.z);
+		ImGui::Text("Camera Front (%.2f, %.2f, %.2f)", camera.Front.x, camera.Front.y, camera.Front.z);
+		ImGui::Text("Camera Up    (%.2f, %.2f, %.2f)", camera.Up.x, camera.Up.y, camera.Up.z);
+		ImGui::Text("Camera Right (%.2f, %.2f, %.2f)", camera.Right.x, camera.Right.y, camera.Right.z);
+		ImGui::Text("Camera Yaw %.2f", camera.Yaw);
+		ImGui::Text("Camera Pitch %.2f", camera.Pitch);
+		ImGui::Text("Camera MovementSpeed %.2f", camera.MovementSpeed);
+		ImGui::Text("Camera Zoom %.2f", camera.Zoom);
+		ImGui::Text("");
+		ImGui::Text("Light Pos (%.2f, %.2f, %.2f)", lightPos.x, lightPos.y, lightPos.z);
+
 		ImGui::End();
 
 		// Depth map texture window
 		ImGui::Begin("Shadow map");
 		ImGui::Text("Texture ID: %x", depthMap);
 		ImGui::Text("Size: %d x %d", SHADOW_WIDTH, SHADOW_HEIGHT);
-		ImGui::Image((ImTextureID)(intptr_t)depthMap, ImVec2(200, 200));
+		ImGui::Image((ImTextureID)(intptr_t)depthMap, ImVec2(200, 200), ImVec2(1, 1), ImVec2(0, 0));
 		ImGui::End();
 
 		if (show_metrics_window)
