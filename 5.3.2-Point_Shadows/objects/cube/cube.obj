@@ -1,0 +1,62 @@
+mtllib cube.mtl
+v 1.0 -1.0 -1.0  # back right down
+v -1.0 -1.0 -1.0  # back left down
+v -1.0 1.0 -1.0  # back left up
+v 1.0 1.0 -1.0  # back right up
+
+v -1.0 -1.0 1.0  # front left down
+v 1.0 -1.0 1.0  # front right down
+v 1.0 1.0 1.0  # front right up
+v -1.0 1.0 1.0  # front left up
+
+v -1.0 -1.0 -1.0  # left down back
+v -1.0 -1.0 1.0  # left down front
+v -1.0 1.0 1.0  # left up front
+v -1.0 1.0 -1.0  # left up back
+
+v 1.0 -1.0 1.0  # right d f
+v 1.0 -1.0 -1.0  # right d b
+v 1.0 1.0 -1.0  # right u b
+v 1.0 1.0 1.0  # right u f
+
+v -1.0 -1.0 -1.0  # down l b
+v 1.0 -1.0 -1.0  # down r b
+v 1.0 -1.0  1.0  # down r f
+v -1.0 -1.0 1.0  # down l f
+
+v -1.0 1.0 1.0  # up l f
+v 1.0 1.0 1.0  # up r f
+v 1.0 1.0 -1.0  # up r b
+v -1.0 1.0 -1.0  # up l b
+
+vn 0.0 0.0 -1.0
+vn 0.0 0.0 1.0
+vn -1.0 0.0 0.0
+vn 1.0 0.0 0.0
+vn 0.0 -1.0 0.0
+vn 0.0 1.0 0.0
+
+vt 0.0 0.0
+vt 1.0 0.0
+vt 1.0 1.0
+vt 0.0 1.0
+
+newmtl Scene_-_Root
+# back
+f 1/1/1 2/2/1 3/3/1
+f 1/1/1 3/3/1 4/4/1
+#front
+f 5/1/2 6/2/2 7/3/2
+f 5/1/2 7/3/2 8/4/2
+# left
+f 9/1/3 10/2/3 11/3/3
+f 9/1/3 11/3/3 12/4/3
+# right
+f 13/1/4 14/2/4 15/3/4
+f 13/1/4 15/3/4 16/4/4
+# down
+f 17/1/5 18/2/5 19/3/5
+f 17/1/5 19/3/5 20/4/5
+# up
+f 21/1/6 22/2/6 23/3/6
+f 21/1/6 23/3/6 24/4/6
