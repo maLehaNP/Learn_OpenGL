@@ -17,8 +17,8 @@ uniform vec3 viewPos;
 
 uniform float far_plane;
 
-//uniform float texelSizeConst;
-//uniform int RadiusPCF;
+uniform int samples;
+uniform float offset;
 
 
 float ShadowCalculation(vec3 fragPos, vec3 lightDir)
@@ -37,7 +37,27 @@ float ShadowCalculation(vec3 fragPos, vec3 lightDir)
 
     // now test for shadows
     float bias = 0.05; 
-    float shadow = currentDepth -  bias > closestDepth ? 1.0 : 0.0;
+
+    //float shadow = currentDepth -  bias > closestDepth ? 1.0 : 0.0;
+
+    // PCF
+    float shadow  = 0.0;
+    for (float x = -offset; x < offset; x += offset / (samples * 0.5))
+    {
+        for (float y = -offset; y < offset; y += offset / (samples * 0.5))
+        {
+            for (float z = -offset; z < offset; z += offset / (samples * 0.5))
+            {
+                float closestDepth = texture(depthMap, fragToLight + vec3(x, y, z)).r; 
+                closestDepth *= far_plane;   // undo mapping [0;1]
+                if(currentDepth - bias > closestDepth)
+                    shadow += 1.0;
+            }
+        }
+    }
+    shadow /= (samples * samples * samples);
+
+    //FragColor = vec4(vec3(closestDepth / far_plane), 1.0);  // Visualizing cubemap depth buffer (comment FragColor in main)
 
     return shadow;
 }

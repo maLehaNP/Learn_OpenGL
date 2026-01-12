@@ -219,10 +219,9 @@ int main() {
 
 	// Our ImGUI state
 	ImVec4 clear_color = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
-	//float texelSizeConst = 1.0f;
-	//int RadiusPCF = 2;
 	bool show_metrics_window = false;
-	//bool rotateLight = false;
+	int samples = 5;
+	float offset = 0.1f;
 
 
 	// Render loop
@@ -273,8 +272,8 @@ int main() {
 
 		shader.use();
 		shader.setVec3("viewPos", camera.Position);
-		//shader.setFloat("texelSizeConst", texelSizeConst);
-		//shader.setInt("RadiusPCF", RadiusPCF);
+		shader.setInt("samples", samples);
+		shader.setFloat("offset", offset);
 
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
@@ -300,9 +299,8 @@ int main() {
 
 		ImGui::ColorEdit3("Clear color", (float*)&clear_color);  // Edit 3 floats representing a color
 
-		//ImGui::SliderFloat("Texel size const", &texelSizeConst, 0.0f, 1.0f);  // Edit 1 float using a slider from 0.0f to 1.0f
-		//ImGui::SliderInt("PCF radius", &RadiusPCF, 0, 4);
-		//ImGui::Checkbox("Light rotation", &rotateLight);
+		ImGui::SliderInt("samples", &samples, 0, 6);
+		ImGui::SliderFloat("offset", &offset, 0.0f, 0.2f);
 
 		ImGui::Checkbox("Show Metrics Window", &show_metrics_window);
 
@@ -331,13 +329,6 @@ int main() {
 		ImGui::Text("");
 		ImGui::Text("Light Pos (%.2f, %.2f, %.2f)", lightPos.x, lightPos.y, lightPos.z);
 
-		ImGui::End();
-
-		// Depth map texture window
-		ImGui::Begin("Shadow map");
-		ImGui::Text("Texture ID: %x", depthCubemap);
-		ImGui::Text("Size: %d x %d", SHADOW_WIDTH, SHADOW_HEIGHT);
-		ImGui::Image((ImTextureID)(intptr_t)depthCubemap, ImVec2(200, 200), ImVec2(1, 1), ImVec2(0, 0));
 		ImGui::End();
 
 		if (show_metrics_window)
