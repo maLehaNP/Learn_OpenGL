@@ -37,8 +37,8 @@ void renderQuad();
 
 
 // Screen
-float screen_width = 1280.0f;
-float screen_height = 720.0f;
+float screen_width = 1920.0f;
+float screen_height = 1080.0f;
 
 double deltaTime = 0.0;
 
@@ -200,7 +200,9 @@ int main() {
 	// Light space transform
 	// ---------------------
 	float near_plane = 1.0f, far_plane = 7.5f;
-	glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+	//glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+	//glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+	glm::mat4 lightProjection = glm::perspective(glm::radians(90.0f), (float)SHADOW_WIDTH / SHADOW_HEIGHT, near_plane, far_plane);
 
 	glm::vec3 lightPos(-2.0f, 4.0f, -1.0f);
 	glm::vec3 lightTarget(0.0f, 0.0f, 0.0f);
@@ -216,7 +218,6 @@ int main() {
 	// shader configuration
 	// --------------------
 	simpleDepthShader.use();
-	simpleDepthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
 	debugDepthQuad.use();
 	debugDepthQuad.setInt("depthMap", 0);
 	shader.use();
@@ -243,12 +244,12 @@ int main() {
 	glm::mat4 model = glm::mat4(1.0f);
 
 	// Our ImGUI state
-	bool show_demo_window = false;
 	bool animate = true;
 	ImVec4 clear_color = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
-
-	float texelSizeConst = 0.5f;
-	int RadiusPCF = 1;
+	float texelSizeConst = 1.0f;
+	int RadiusPCF = 2;
+	float lightFOV = 90.0f;
+	bool show_metrics_window = false;
 
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
@@ -278,6 +279,10 @@ int main() {
 		// 1. render depth of scene to texture (from light's perspective)
 		// --------------------------------------------------------------
 		simpleDepthShader.use();
+		lightProjection = glm::perspective(glm::radians(lightFOV), (float)SHADOW_WIDTH / SHADOW_HEIGHT, near_plane, far_plane);
+		lightSpaceMatrix = lightProjection * lightView;
+		simpleDepthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+
 		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
 		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
 		glClear(GL_DEPTH_BUFFER_BIT);
@@ -333,9 +338,16 @@ int main() {
 		ImGui::Text("Camera Front (%.2f, %.2f, %.2f)", camera.Front.x, camera.Front.y, camera.Front.z);
 		ImGui::Text("Camera Up    (%.2f, %.2f, %.2f)", camera.Up.x, camera.Up.y, camera.Up.z);
 		ImGui::Text("Camera Right (%.2f, %.2f, %.2f)", camera.Right.x, camera.Right.y, camera.Right.z);
+		ImGui::Text("Camera Yaw %.2f", camera.Yaw);
+		ImGui::Text("Camera Pitch %.2f", camera.Pitch);
+		ImGui::Text("Camera MovementSpeed %.2f", camera.MovementSpeed);
+		ImGui::Text("Camera Zoom %.2f", camera.Zoom);
 
 		ImGui::SliderFloat("Texel size const", &texelSizeConst, 0.0f, 1.0f);  // Edit 1 float using a slider from 0.0f to 1.0f
 		ImGui::SliderInt("PCF radius", &RadiusPCF, 0, 4);
+		ImGui::SliderFloat("Light perspective FOV", &lightFOV, 85.0f, 95.0f);
+
+		ImGui::Checkbox("Demo Window", &show_metrics_window);
 
 		float deltaTimeAvg = 0.0f;
 		float renderTimeAvg = 0.0f;
@@ -352,6 +364,16 @@ int main() {
 		ImGui::PlotLines("Render time", render_times, TIMES_SAMPLE_AMOUNT, times_offset, overlay, 0.0f, 5.0f, ImVec2(0, 100));
 
 		ImGui::End();
+
+		// Depth map texture window
+		ImGui::Begin("Shadow map");
+		ImGui::Text("Texture ID: %x", depthMap);
+		ImGui::Text("Size: %d x %d", SHADOW_WIDTH, SHADOW_HEIGHT);
+		ImGui::Image((ImTextureID)(intptr_t)depthMap, ImVec2(200, 200));
+		ImGui::End();
+
+		if (show_metrics_window)
+			ImGui::ShowMetricsWindow();
 
 		// Rendering
 		ImGui::Render();
@@ -415,10 +437,10 @@ void renderQuad()
 	{
 		float quadVertices[] = {
 			// positions        // texture Coords
-			-1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
-			-1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-			 1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
-			 1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+			0.25f, 0.75f, 0.0f, 0.0f, 1.0f,
+			0.25f, 0.25f, 0.0f, 0.0f, 0.0f,
+			0.75f, 0.75f, 0.0f, 1.0f, 1.0f,
+			0.75f, 0.25f, 0.0f, 1.0f, 0.0f
 		};
 		// setup plane VAO
 		glGenVertexArrays(1, &quadVAO);
