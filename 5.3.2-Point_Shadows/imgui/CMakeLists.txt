@@ -1,18 +1,25 @@
-add_library(ImGui)
+cmake_minimum_required(VERSION 4.2)
 
-target_sources(ImGui
-    PRIVATE
-        imgui.cpp
-        imgui_impl_glfw.cpp
-        imgui_impl_opengl3.cpp
-    
+# creating ImGui-Lib
+add_library(imgui
+    imgui.cpp
+    imgui_demo.cpp
+    imgui_draw.cpp
+    imgui_tables.cpp
+    imgui_widgets.cpp
+
+    imgui_impl_glfw.cpp
+    imgui_impl_opengl3.cpp
+
+    imgui.h
+    imconfig.h
+    imgui_internal.h
+
+    imgui_impl_glfw.h
+    imgui_impl_opengl3.h
+)
+
+target_include_directories(imgui
     PUBLIC
-        FILE_SET HEADERS
-        FILES
-            imgui.h
-            imgui_impl_glfw.h
-            imgui_impl_opengl3.h
-            imconfig.h
-            imgui_impl_opengl3_loader.h
-            imgui_internal.h
+        ${CMAKE_CURRENT_SOURCE_DIR}
 )
