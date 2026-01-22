@@ -1,5 +1,5 @@
 #define _CRT_SECURE_NO_WARNINGS
-#define TIMES_SAMPLE_AMOUNT 400
+#define TIMES_SAMPLE_AMOUNT 120
 
 #include <iostream>
 #include <string>
@@ -176,7 +176,7 @@ int main() {
 	float far = 25.0f;
 	glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, near, far);  // FOV must be 90!
 
-	std::vector<glm::mat4> shadowTransforms = {
+	std::array<glm::mat4, 6> shadowTransforms = {
 		shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)),
 		shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(-1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)),
 		shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0, 1.0, 0.0), glm::vec3(0.0, 0.0, 1.0)),
@@ -205,23 +205,23 @@ int main() {
 
 	// Runtime variables
 	// Per-frame time logic
-	double currentTime;
 	double lastTime = 0.0;
-	double renderStartTime;
-	double renderEndTime;
 	double renderTime = 0.0;
 	float delta_times[TIMES_SAMPLE_AMOUNT];
 	float render_times[TIMES_SAMPLE_AMOUNT];
 	int times_offset = 0;
 
-	glm::mat4 view;
-	glm::mat4 model = glm::mat4(1.0f);
-
 	// Our ImGUI state
 	ImVec4 clear_color = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
 	bool show_metrics_window = false;
-	int samples = 5;
-	float offset = 0.1f;
+	int samples = 3;
+	float offset = 0.05f;
+
+	unsigned int query[1];
+	glGenQueries(1, query);
+	int frameGpuTime;
+	int queryRes = GL_TRUE;
+	float gpu_times[TIMES_SAMPLE_AMOUNT];
 
 
 	// Render loop
@@ -229,8 +229,8 @@ int main() {
 	while (!glfwWindowShouldClose(window)) {
 		// Per-frame time logic
 		// --------------------
-		renderStartTime = glfwGetTime();
-		currentTime = glfwGetTime();
+		double renderStartTime = glfwGetTime();
+		double currentTime = glfwGetTime();
 		deltaTime = currentTime - lastTime;
 		lastTime = currentTime;
 
@@ -246,6 +246,9 @@ int main() {
 		glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+
+		if (queryRes == GL_TRUE)
+			glBeginQuery(GL_TIME_ELAPSED, query[0]);
 
 		// 1. render depth of scene to texture (from light's perspective)
 		// --------------------------------------------------------------
@@ -265,7 +268,7 @@ int main() {
 
 		// 2. render scene as normal using the generated depth/shadow map  
 		// --------------------------------------------------------------
-		view = camera.GetViewMatrix();
+		glm::mat4 view = camera.GetViewMatrix();
 		glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
 		glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
@@ -281,11 +284,22 @@ int main() {
 		renderScene(shader, cube);
 
 		lightShader.use();
-		model = glm::mat4(1.0f);
+		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::translate(model, lightPos);
 		model = glm::scale(model, glm::vec3(0.25f));
 		lightShader.setMat4("model", model);
 		lightCube.Draw(lightShader);
+		
+		if (queryRes == GL_TRUE)
+			glEndQuery(GL_TIME_ELAPSED);
+
+		double renderEndTime = glfwGetTime();  // Not includes ImGui rendering time (+~0.4 ms)
+		renderTime = renderEndTime - renderStartTime;
+
+		glGetQueryObjectiv(query[0], GL_QUERY_RESULT_AVAILABLE, &queryRes);
+		if (queryRes == GL_TRUE)
+			glGetQueryObjectiv(query[0], GL_QUERY_RESULT, &frameGpuTime);
+		gpu_times[times_offset] = static_cast<float>(frameGpuTime) / 1000000;
 		
 
 		// ImGui
@@ -306,17 +320,22 @@ int main() {
 
 		float deltaTimeAvg = 0.0f;
 		float renderTimeAvg = 0.0f;
+		float gpuTimeAvg = 0.0f;
 		for (int i = 0; i < TIMES_SAMPLE_AMOUNT; i++) {
 			deltaTimeAvg += delta_times[i];
 			renderTimeAvg += render_times[i];
+			gpuTimeAvg += gpu_times[i];
 		}
-		deltaTimeAvg /= (float)TIMES_SAMPLE_AMOUNT;
-		renderTimeAvg /= (float)TIMES_SAMPLE_AMOUNT;
+		deltaTimeAvg /= TIMES_SAMPLE_AMOUNT;
+		renderTimeAvg /= TIMES_SAMPLE_AMOUNT;
+		gpuTimeAvg /= TIMES_SAMPLE_AMOUNT;
 		char overlay[32];
 		sprintf(overlay, "mov avg %f ms", deltaTimeAvg);
 		ImGui::PlotLines("Frame time", delta_times, TIMES_SAMPLE_AMOUNT, times_offset, overlay, 0.0f, 20.0f, ImVec2(0, 100));
 		sprintf(overlay, "mov avg %f ms", renderTimeAvg);
 		ImGui::PlotLines("Render time", render_times, TIMES_SAMPLE_AMOUNT, times_offset, overlay, 0.0f, 5.0f, ImVec2(0, 100));
+		sprintf(overlay, "mov avg %f ms", gpuTimeAvg);
+		ImGui::PlotLines("GPU time", gpu_times, TIMES_SAMPLE_AMOUNT, times_offset, overlay, 0.0f, 10.0f, ImVec2(0, 100));
 
 		ImGui::Text("Camera Pos   (%.2f, %.2f, %.2f)", camera.Position.x, camera.Position.y, camera.Position.z);
 		ImGui::Text("Camera Front (%.2f, %.2f, %.2f)", camera.Front.x, camera.Front.y, camera.Front.z);
@@ -338,9 +357,6 @@ int main() {
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-
-		renderEndTime = glfwGetTime();  // Includes ImGui rendering time (+~0.4 ms)
-		renderTime = renderEndTime - renderStartTime;
 
 		glfwSwapBuffers(window);
 	}
