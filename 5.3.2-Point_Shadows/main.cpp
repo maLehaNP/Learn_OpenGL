@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include <string>
-#include <vector>
+#include <array>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -207,23 +207,26 @@ int main() {
 	// Per-frame time logic
 	double lastTime = 0.0;
 	double renderTime = 0.0;
-	float delta_times[TIMES_SAMPLE_AMOUNT];
-	float render_times[TIMES_SAMPLE_AMOUNT];
+	float delta_times[TIMES_SAMPLE_AMOUNT]{};
+	float render_times[TIMES_SAMPLE_AMOUNT]{};
 	int times_offset = 0;
+	float deltaTimeSum = 0.0f;
+	float renderTimeSum = 0.0f;
+	float gpuTimeSum = 0.0f;
+	// GPU time
+	unsigned int query[1];
+	glGenQueries(1, query);
+	int frameGpuTime = 0;
+	int queryRes = GL_TRUE;
+	float gpu_times[TIMES_SAMPLE_AMOUNT]{};
 
 	// Our ImGUI state
 	ImVec4 clear_color = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
 	bool show_metrics_window = false;
 	int samples = 3;
-	float offset = 0.05f;
+	float offset = 0.025f;
 
-	unsigned int query[1];
-	glGenQueries(1, query);
-	int frameGpuTime;
-	int queryRes = GL_TRUE;
-	float gpu_times[TIMES_SAMPLE_AMOUNT];
-
-
+	
 	// Render loop
 	// -----------
 	while (!glfwWindowShouldClose(window)) {
@@ -233,6 +236,9 @@ int main() {
 		double currentTime = glfwGetTime();
 		deltaTime = currentTime - lastTime;
 		lastTime = currentTime;
+
+		float deltaTimeDelta = deltaTime * 1000 - delta_times[times_offset];
+		float renderTimeDelta = renderTime * 1000 - render_times[times_offset];
 
 		delta_times[times_offset] = deltaTime * 1000;
 		render_times[times_offset] = renderTime * 1000;
@@ -299,6 +305,9 @@ int main() {
 		glGetQueryObjectiv(query[0], GL_QUERY_RESULT_AVAILABLE, &queryRes);
 		if (queryRes == GL_TRUE)
 			glGetQueryObjectiv(query[0], GL_QUERY_RESULT, &frameGpuTime);
+
+		float gpuTimeDelta = static_cast<float>(frameGpuTime) / 1000000 - gpu_times[times_offset];
+
 		gpu_times[times_offset] = static_cast<float>(frameGpuTime) / 1000000;
 		
 
@@ -313,28 +322,20 @@ int main() {
 
 		ImGui::ColorEdit3("Clear color", (float*)&clear_color);  // Edit 3 floats representing a color
 
-		ImGui::SliderInt("samples", &samples, 0, 6);
-		ImGui::SliderFloat("offset", &offset, 0.0f, 0.2f);
+		ImGui::SliderInt("samples", &samples, 0, 5);
+		ImGui::SliderFloat("offset", &offset, 0.0f, 0.1f);
 
 		ImGui::Checkbox("Show Metrics Window", &show_metrics_window);
 
-		float deltaTimeAvg = 0.0f;
-		float renderTimeAvg = 0.0f;
-		float gpuTimeAvg = 0.0f;
-		for (int i = 0; i < TIMES_SAMPLE_AMOUNT; i++) {
-			deltaTimeAvg += delta_times[i];
-			renderTimeAvg += render_times[i];
-			gpuTimeAvg += gpu_times[i];
-		}
-		deltaTimeAvg /= TIMES_SAMPLE_AMOUNT;
-		renderTimeAvg /= TIMES_SAMPLE_AMOUNT;
-		gpuTimeAvg /= TIMES_SAMPLE_AMOUNT;
+		deltaTimeSum += deltaTimeDelta;
+		renderTimeSum += renderTimeDelta;
+		gpuTimeSum += gpuTimeDelta;
 		char overlay[32];
-		sprintf(overlay, "mov avg %f ms", deltaTimeAvg);
+		sprintf(overlay, "mov avg %f ms", deltaTimeSum / TIMES_SAMPLE_AMOUNT);
 		ImGui::PlotLines("Frame time", delta_times, TIMES_SAMPLE_AMOUNT, times_offset, overlay, 0.0f, 20.0f, ImVec2(0, 100));
-		sprintf(overlay, "mov avg %f ms", renderTimeAvg);
+		sprintf(overlay, "mov avg %f ms", renderTimeSum / TIMES_SAMPLE_AMOUNT);
 		ImGui::PlotLines("Render time", render_times, TIMES_SAMPLE_AMOUNT, times_offset, overlay, 0.0f, 5.0f, ImVec2(0, 100));
-		sprintf(overlay, "mov avg %f ms", gpuTimeAvg);
+		sprintf(overlay, "mov avg %f ms", gpuTimeSum / TIMES_SAMPLE_AMOUNT);
 		ImGui::PlotLines("GPU time", gpu_times, TIMES_SAMPLE_AMOUNT, times_offset, overlay, 0.0f, 10.0f, ImVec2(0, 100));
 
 		ImGui::Text("Camera Pos   (%.2f, %.2f, %.2f)", camera.Position.x, camera.Position.y, camera.Position.z);

@@ -75,4 +75,8 @@
   <ItemGroup>
     <None Include="assimp-vc143-mt.dll" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="CMakeLists.txt" />
+    <Text Include="imgui\CMakeLists.txt" />
+  </ItemGroup>
 </Project>
