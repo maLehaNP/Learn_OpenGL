@@ -8,6 +8,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <cstdlib>
+#include <ctime>
 
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
