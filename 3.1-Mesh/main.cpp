@@ -13,7 +13,8 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "shader_m.h"
-#include "camera.h"
+//#include "camera.h"
+#include <learnopengl/camera.h>
 #include "mesh.h"
 
 using namespace std;
